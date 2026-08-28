@@ -1,15 +1,32 @@
 ---
 import type { GetStaticPaths } from "astro";
+import Note from "@/components/note/Note.astro";
+import { getLocalizedNotes } from "@/data/rss";
 import { locales, type Locale } from "@/i18n";
 import PageLayout from "@/layouts/Base.astro";
+import { collectionDateSort } from "@/utils/date";
 
 export const getStaticPaths = (() => locales.map((lang) => ({ params: { lang } }))) satisfies GetStaticPaths;
 
 const locale = Astro.params.lang as Locale;
+const notes = await getLocalizedNotes(locale);
+notes.sort(collectionDateSort);
 const copy = locale === "zh" ? { empty: "随记会在这里慢慢出现。", title: "随记" } : { empty: "Notes will appear here, slowly.", title: "Notes" };
 ---
 
 <PageLayout locale={locale} meta={{ description: copy.empty, title: copy.title }}>
 	<h1 class="title mb-12">{copy.title}</h1>
-	<p>{copy.empty}</p>
+	{
+		notes.length ? (
+			<ul class="space-y-8 text-start">
+				{notes.map((note) => (
+					<li>
+						<Note as="h2" isPreview locale={locale} note={note} />
+					</li>
+				))}
+			</ul>
+		) : (
+			<p>{copy.empty}</p>
+		)
+	}
 </PageLayout>

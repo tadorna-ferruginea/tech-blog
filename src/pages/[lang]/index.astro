@@ -1,30 +1,80 @@
 ---
 import type { GetStaticPaths } from "astro";
+import FormattedDate from "@/components/FormattedDate.astro";
+import Note from "@/components/note/Note.astro";
+import { getLocalizedNotes, getLocalizedPosts, localizedSlug } from "@/data/rss";
 import { locales, type Locale } from "@/i18n";
 import PageLayout from "@/layouts/Base.astro";
+import { collectionDateSort } from "@/utils/date";
 
 export const getStaticPaths = (() => locales.map((lang) => ({ params: { lang } }))) satisfies GetStaticPaths;
 
 const locale = Astro.params.lang as Locale;
+const [posts, notes] = await Promise.all([getLocalizedPosts(locale), getLocalizedNotes(locale)]);
+posts.sort(collectionDateSort);
+notes.sort(collectionDateSort);
+const pinnedPosts = posts.filter((post) => post.data.pinned);
 const copy =
 	locale === "zh"
 		? {
-			description: "写下技术、研究与日常想法的个人空间。",
-			headline: "慢慢写，慢慢想。",
-			intro: "这里用来记录技术、研究和日常里值得停留的想法。",
+			description: "收集日常生活碎片的个人池塘。",
+			headline: "Honk, 欢迎来到我的池塘！",
+			intro: "我会在这里收集一些闪闪发光的碎片。包括但不限于物理，数学，算法，电影，菜谱，插画，音乐，书籍，汽车维修，以及如何在预算紧张的情况下改善生活质量。",
+			notes: "随记",
+			pinned: "置顶文章",
+			posts: "文章",
 			title: "主页",
 		}
 		: {
-			description: "A personal space for technical, research, and everyday ideas.",
-			headline: "Write slowly. Think slowly.",
-			intro: "A place to collect technical, research, and everyday ideas worth lingering with.",
+			description: "A personal pond for fragments of everyday life.",
+			headline: "Honk, Welcome to My Pond!",
+			intro: "Here I am collecting some shiny fragments: physics, math, algorithms, films, recipes, illustrations, music, books, car repairs, and ways to improve one’s quality of life on a tight budget, among other things.",
+			notes: "Notes",
+			pinned: "Pinned Posts",
+			posts: "Posts",
 			title: "Home",
 		};
 ---
 
 <PageLayout locale={locale} meta={{ description: copy.description, title: copy.title }}>
-	<section>
+	<section class="prose prose-sm max-w-none">
 		<h1 class="title mb-12">{copy.headline}</h1>
 		<p>{copy.intro}</p>
+	</section>
+	{
+		pinnedPosts.length > 0 && (
+			<section class="mt-16">
+				<h2 class="title text-xl">{copy.pinned}</h2>
+				<ul class="mt-5 space-y-3">
+					{pinnedPosts.map((post) => (
+						<li class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+							<FormattedDate class="text-muted font-semibold" date={post.data.publishDate} />
+							<a class="cactus-link" href={`/${locale}/posts/${localizedSlug(locale, post.id)}/`}>{post.data.title}</a>
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
+	<section class="mt-12">
+		<h2 class="title text-accent mb-6 text-xl"><a href={`/${locale}/posts/`}>{copy.posts}</a></h2>
+		<ul class="mt-5 space-y-3">
+			{posts.map((post) => (
+				<li class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+					<FormattedDate class="text-muted font-semibold" date={post.data.publishDate} />
+					<a class="cactus-link" href={`/${locale}/posts/${localizedSlug(locale, post.id)}/`}>{post.data.title}</a>
+				</li>
+			))}
+		</ul>
+	</section>
+	<section class="mt-12">
+		<h2 class="title text-accent mb-6 text-xl"><a href={`/${locale}/notes/`}>{copy.notes}</a></h2>
+		<ul class="mt-6 space-y-8 text-start">
+			{notes.map((note) => (
+				<li>
+					<Note as="h3" isPreview locale={locale} note={note} />
+				</li>
+			))}
+		</ul>
 	</section>
 </PageLayout>
