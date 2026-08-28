@@ -1,0 +1,31 @@
+---
+import { getCollection } from "astro:content";
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import Note from "@/components/note/Note.astro";
+import { locales, type Locale } from "@/i18n";
+import PageLayout from "@/layouts/Base.astro";
+
+export const getStaticPaths = (async () => {
+	const notes = await getCollection("note");
+	return locales.flatMap((lang) =>
+		notes
+			.filter((note) => note.id.startsWith(`${lang}/`))
+			.map((note) => ({
+				params: { lang, slug: note.id.slice(`${lang}/`.length) },
+				props: { locale: lang, note },
+			})),
+	);
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { locale, note } = Astro.props as Props & { locale: Locale };
+const meta = {
+	description: note.data.description || note.data.title,
+	title: note.data.title,
+};
+---
+
+<PageLayout locale={locale} meta={meta}>
+	<Note as="h1" note={note} />
+</PageLayout>

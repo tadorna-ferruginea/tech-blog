@@ -6,12 +6,14 @@ import TOC from "@/components/blog/TOC.astro";
 import WebMentions from "@/components/blog/webmentions/index.astro";
 
 import BaseLayout from "./Base.astro";
+import type { Locale } from "@/i18n";
 
 interface Props {
+	locale?: Locale | undefined;
 	post: CollectionEntry<"post">;
 }
 
-const { post } = Astro.props;
+const { locale, post } = Astro.props;
 const { ogImage, title, description, updatedDate, publishDate } = post.data;
 const socialImage = ogImage ?? `/og-image/${post.id}.png`;
 const articleDate = updatedDate?.toISOString() ?? publishDate.toISOString();
@@ -20,6 +22,7 @@ const readingTime: string = remarkPluginFrontmatter.readingTime;
 ---
 
 <BaseLayout
+	locale={locale}
 	meta={{
 		articleDate,
 		description,

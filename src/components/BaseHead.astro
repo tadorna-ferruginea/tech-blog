@@ -1,12 +1,13 @@
 ---
 import { WEBMENTION_PINGBACK, WEBMENTION_URL } from "astro:env/client";
 import { siteConfig } from "@/site.config";
+import type { Locale } from "@/i18n";
 import type { SiteMeta } from "@/types";
 import "@/styles/global.css";
 
-type Props = SiteMeta & { siteName?: string };
+type Props = SiteMeta & { locale?: Locale; siteName?: string };
 
-const { articleDate, description, ogImage, siteName = siteConfig.title, title } = Astro.props;
+const { articleDate, description, locale = "en", ogImage, siteName = siteConfig.title, title } = Astro.props;
 
 const titleSeparator = "•";
 const siteTitle = `${title} ${titleSeparator} ${siteName}`;
@@ -70,8 +71,8 @@ const socialImageURL = new URL(ogImage ? ogImage : "/social-card.png", Astro.url
 <link href="/sitemap-index.xml" rel="sitemap" />
 
 {/* RSS auto-discovery */}
-<link href="/rss.xml" title="Blog" rel="alternate" type="application/rss+xml" />
-<link href="/notes/rss.xml" title="Notes" rel="alternate" type="application/rss+xml" />
+<link href={`/${locale}/rss.xml`} title={locale === "zh" ? "赤麻鸭的池塘｜文章" : "Ruddy Shelduck’s Pond | Blog"} rel="alternate" type="application/rss+xml" />
+<link href={`/${locale}/notes/rss.xml`} title={locale === "zh" ? "赤麻鸭的池塘｜随记" : "Ruddy Shelduck’s Pond | Notes"} rel="alternate" type="application/rss+xml" />
 
 {/* Webmentions */}
 {
