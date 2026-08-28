@@ -23,3 +23,6 @@ pnpm-debug.log*
 *.pem
 .cache
 .astro
+
+# Local design working files; do not publish to the repository.
+figma-social-card/
