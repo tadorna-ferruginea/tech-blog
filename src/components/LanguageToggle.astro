@@ -1,0 +1,16 @@
+---
+import { getLocale, localizedPath } from "@/i18n";
+
+const locale = getLocale(Astro.url.pathname);
+const targetLocale = locale === "zh" ? "en" : "zh";
+const targetPath = localizedPath(targetLocale, Astro.url.pathname);
+const label = locale === "zh" ? "Switch to English" : "切换至中文";
+---
+
+<a
+	aria-label={label}
+	class="hover:text-accent ms-2 inline-flex h-9 w-9 items-center justify-center font-semibold transition-colors sm:ms-4"
+	href={targetPath}
+>
+	<span aria-hidden="true">{locale === "zh" ? "EN" : "中"}</span>
+</a>

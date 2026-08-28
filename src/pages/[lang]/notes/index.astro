@@ -1,0 +1,15 @@
+---
+import type { GetStaticPaths } from "astro";
+import { locales, type Locale } from "@/i18n";
+import PageLayout from "@/layouts/Base.astro";
+
+export const getStaticPaths = (() => locales.map((lang) => ({ params: { lang } }))) satisfies GetStaticPaths;
+
+const locale = Astro.params.lang as Locale;
+const copy = locale === "zh" ? { empty: "随记会在这里慢慢出现。", title: "随记" } : { empty: "Notes will appear here, slowly.", title: "Notes" };
+---
+
+<PageLayout locale={locale} meta={{ description: copy.empty, title: copy.title }}>
+	<h1 class="title mb-12">{copy.title}</h1>
+	<p>{copy.empty}</p>
+</PageLayout>

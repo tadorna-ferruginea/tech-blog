@@ -1,7 +1,20 @@
 ---
-import { menuLinks, siteConfig } from "@/site.config";
+import { labels, type Locale } from "@/i18n";
+import { siteConfig } from "@/site.config";
 
 const year = new Date().getFullYear();
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const menuLinks = [
+	{ path: "/", title: labels[locale].home },
+	{ path: "/about/", title: labels[locale].about },
+	{ path: "/posts/", title: labels[locale].posts },
+	{ path: "/notes/", title: labels[locale].notes },
+];
 ---
 
 <footer
@@ -9,12 +22,12 @@ const year = new Date().getFullYear();
 >
 	<div class="me-0 sm:me-4">
 		&copy; {siteConfig.author}
-		{year}.<span class="inline-block">&nbsp;🚀&nbsp;{siteConfig.title}&nbsp;🌵&nbsp;</span>
+		{year}.<span class="inline-block">&nbsp;Based on Chris Williams&nbsp;🚀&nbsp;Astro Cactus&nbsp;🌵&nbsp;</span>
 	</div>
 	<nav aria-label="Footer" class="sm:divide-muted flex gap-x-2 sm:gap-x-0 sm:divide-x">
 		{
 			menuLinks.map((link) => (
-				<a class="hover:text-global-text px-4 py-2 hover:underline sm:py-0" href={link.path}>
+				<a class="hover:text-global-text px-4 py-2 hover:underline sm:py-0" href={`/${locale}${link.path}`}>
 					{link.title}
 				</a>
 			))
