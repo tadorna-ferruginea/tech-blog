@@ -1,44 +1,30 @@
-# Astro Croissant
+# Ruddy Shelduck’s Pond
 
-Astro Croissant is a quiet, hand-drawn starter for a personal blog, research notes, and slowly collected ideas. Its header pairs a ruddy shelduck with layered green water ripples: all ripples are visible at rest, then redraw from the inside out on hover or keyboard focus.
+My bilingual personal blog: a place for glimmering fragments about my life.
 
-It is built with Astro, Markdown/MDX content collections, Tailwind CSS, local search, RSS, responsive layouts, light and dark modes, and automatically generated social images.
+Visit [tadorna-ferruginea.com](https://tadorna-ferruginea.com).
 
-## Make it yours
+## About the site
 
-1. Edit [`src/site.config.ts`](./src/site.config.ts): set your title, name, description, domain, and language.
-2. Replace the sample posts and notes in [`content/`](./content/) with your own writing. They are examples only; remove them when you no longer need their reference structures.
-3. Add your social links in [`src/components/SocialList.astro`](./src/components/SocialList.astro).
-4. Replace [`public/favicon.png`](./public/favicon.png) and [`public/social-card.png`](./public/social-card.png) if you want a different visual identity.
-5. Keep the header artwork in [`public/images/`](./public/images/) or replace it together with the layout in [`src/components/layout/Header.astro`](./src/components/layout/Header.astro).
+The site is built with Astro, Markdown/MDX content collections, Tailwind CSS, local search, RSS, responsive layouts, light and dark modes, and generated social images. Its header features a hand-drawn ruddy shelduck and layered green water ripples that redraw from the inside out on hover or keyboard focus.
 
-## Writing with AI
+Chinese and English live at `/zh/` and `/en/`; the root URL chooses one from the browser language. Posts and notes are stored as matching language pairs under [`content/`](./content/). See [`AGENTS.md`](./AGENTS.md) for the publishing, translation-disclosure, quotation, and image-privacy conventions used in this repository.
 
-AI can draft a post in Markdown; the template still provides the publishing layer:
-
-- Markdown and MDX turn your draft into a readable article.
-- Frontmatter supplies the title, description, date, tags, cover, draft state, and social-image metadata.
-- Drafts let you review an AI draft before publishing.
-- Search, RSS, social previews, and responsive reading pages remain useful after the text is generated.
-
-For a new article, create a `.md` or `.mdx` file in `content/posts/`. For shorter entries, use `content/notes/`.
-
-## Local use
+## Local development
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Useful commands:
+To make a production build:
 
 ```bash
 pnpm build
-pnpm check
 ```
 
-## License and attribution
+## Theme and licensing
 
-Astro Croissant is a derivative of [Astro Cactus](https://github.com/chrismwilliams/astro-theme-cactus) by Chris Williams.
+The site’s template is called **Astro Croissant**, a derivative of [Astro Cactus](https://github.com/chrismwilliams/astro-theme-cactus) by Chris Williams.
 
-Code is released under the MIT License; site content is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The original copyright and permission notice are retained in [LICENSE](./LICENSE), as required by MIT. See [NOTICE.md](./NOTICE.md) for the concise attribution record.
+Repository code is released under the MIT License. Site writing and images are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) unless otherwise noted. The original copyright and permission notice are retained in [LICENSE](./LICENSE); [NOTICE.md](./NOTICE.md) records the derivative work and its changes.
