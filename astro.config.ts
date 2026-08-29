@@ -34,7 +34,7 @@ export default defineConfig({
 			name: siteConfig.title,
 			description: siteConfig.description,
 			lang: siteConfig.lang,
-			icon: "public/favicon.png", // source for generated app icons
+			icon: "public/croissant-favicon-20260829.png", // source for generated app icons
 			icons: [
 				{
 					src: "icons/apple-touch-icon.png", // used in src/components/BaseHead.astro L:26

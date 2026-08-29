@@ -2,14 +2,17 @@
 import { Image } from "astro:assets";
 import type { CollectionEntry } from "astro:content";
 import FormattedDate from "@/components/FormattedDate.astro";
+import type { Locale } from "@/i18n";
 
 interface Props {
 	content: CollectionEntry<"post">;
+	locale?: Locale;
 	readingTime: string;
 }
 
 const {
 	content: { data },
+	locale,
 	readingTime,
 } = Astro.props;
 ---
@@ -70,7 +73,7 @@ const {
 				<>
 					{/* prettier-ignore */}
 					<span class="contents">
-						<a class="cactus-link inline-block before:content-['#']" data-pagefind-filter={`tag:${tag}`} href={`/tags/${tag}/`}><span class="sr-only">View more blogs with the tag&nbsp;</span>{tag}
+						<a class="cactus-link inline-block before:content-['#']" data-pagefind-filter={`tag:${tag}`} href={`/${locale ?? "en"}/tags/${tag}/`}><span class="sr-only">View more blogs with the tag&nbsp;</span>{tag}
 						</a>{i < data.tags.length - 1 && ", "}
 					</span>
 				</>

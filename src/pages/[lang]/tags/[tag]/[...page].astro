@@ -1,0 +1,41 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import PostPreview from "@/components/blog/PostPreview.astro";
+import Pagination from "@/components/Paginator.astro";
+import { getAllPosts, getUniqueTags } from "@/data/post";
+import { locales, type Locale } from "@/i18n";
+import PageLayout from "@/layouts/Base.astro";
+import { collectionDateSort } from "@/utils/date";
+
+export const getStaticPaths = (async ({ paginate }) => {
+	const posts = (await getAllPosts()).sort(collectionDateSort);
+	return locales.flatMap((lang) => {
+		const localizedPosts = posts.filter((post) => post.id.startsWith(`${lang}/`));
+		return getUniqueTags(localizedPosts).flatMap((tag) =>
+			paginate(localizedPosts.filter((post) => post.data.tags.includes(tag)), {
+				pageSize: 10,
+				params: { lang, tag },
+			}),
+		);
+	});
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+const { page } = Astro.props as Props;
+const locale = Astro.params.lang as Locale;
+const tag = Astro.params.tag ?? "";
+const copy = locale === "zh" ? { back: "标签", title: `#${tag} 的文章` } : { back: "Tags", title: `Posts tagged #${tag}` };
+---
+
+<PageLayout locale={locale} meta={{ description: copy.title, title: copy.title }}>
+	<nav class="mb-8" aria-label="Breadcrumbs">
+		<a class="text-accent" href={`/${locale}/tags/`}>{copy.back}</a>
+	</nav>
+	<h1 class="title mb-12">{copy.title}</h1>
+	<ul class="space-y-4">
+		{page.data.map((post) => (
+			<li class="grid gap-1 sm:grid-cols-[auto_1fr]"><PostPreview as="h2" locale={locale} post={post} /></li>
+		))}
+	</ul>
+	<Pagination {...(page.url.prev ? { prevUrl: { text: "←", url: page.url.prev } } : {})} {...(page.url.next ? { nextUrl: { text: "→", url: page.url.next } } : {})} />
+</PageLayout>

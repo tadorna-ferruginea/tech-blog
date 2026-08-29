@@ -1,0 +1,29 @@
+---
+import type { GetStaticPaths } from "astro";
+import { getUniqueTagsWithCount } from "@/data/post";
+import { getLocalizedPosts } from "@/data/rss";
+import { locales, type Locale } from "@/i18n";
+import PageLayout from "@/layouts/Base.astro";
+
+export const getStaticPaths = (() => locales.map((lang) => ({ params: { lang } }))) satisfies GetStaticPaths;
+
+const locale = Astro.params.lang as Locale;
+const tags = getUniqueTagsWithCount(await getLocalizedPosts(locale));
+const copy = locale === "zh" ? { description: "文章标签索引。", title: "标签" } : { description: "A list of topics in my posts.", title: "Tags" };
+---
+
+<PageLayout locale={locale} meta={{ description: copy.description, title: copy.title }}>
+	<h1 class="title mb-6">{copy.title}</h1>
+	<ul class="space-y-4">
+		{
+			tags.map(([tag, count]) => (
+				<li class="flex items-center gap-x-2">
+					<a class="cactus-link inline-block" href={`/${locale}/tags/${tag}/`}>
+						&#35;{tag}
+					</a>
+					<span class="inline-block">{count}</span>
+				</li>
+			))
+		}
+	</ul>
+</PageLayout>
