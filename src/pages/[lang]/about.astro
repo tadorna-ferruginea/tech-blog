@@ -1,5 +1,6 @@
 ---
 import type { GetStaticPaths } from "astro";
+import { Icon } from "astro-icon/components";
 import { locales, type Locale } from "@/i18n";
 import PageLayout from "@/layouts/Base.astro";
 
@@ -7,12 +8,51 @@ export const getStaticPaths = (() => locales.map((lang) => ({ params: { lang } }
 
 const locale = Astro.params.lang as Locale;
 const copy =
-	locale === "zh"
-		? { description: "关于 Nicole 的网站。", text: "这是一个用于慢慢记录想法的个人网站。", title: "关于" }
-		: { description: "About Nicole's site.", text: "A personal site for slowly collecting ideas.", title: "About" };
+		locale === "zh"
+			? { description: "关于 Nicole 的网站。", title: "关于" }
+		: { description: "About Nicole.", text: "A physics PhD student, pond keeper, and occasional goalkeeper.", title: "About" };
 ---
 
 <PageLayout locale={locale} meta={{ description: copy.description, title: copy.title }}>
 	<h1 class="title mb-12">{copy.title}</h1>
-	<p>{copy.text}</p>
+	{
+		locale === "zh" ? (
+			<section class="prose reading-prose font-prose max-w-none">
+				<p>我是 Nicole，目前在 CUNY Graduate Center 读物理PhD，今年已经是第三年了。</p>
+				<p>我来自河北，如果你想问我在哪里上的高中，我推荐你去读《规训与惩罚：监狱的诞生》。</p>
+				<p>我的 GitHub 在 <a aria-label="Nicole 的 GitHub" class="not-prose hover:text-accent inline-flex align-text-bottom" href="https://github.com/tadorna-ferruginea" rel="noreferrer" target="_blank"><Icon aria-hidden="true" class="h-5 w-5" name="mdi:github" /></a>，点开链接完全是浪费时间，不过里边有个贪吃蛇挺好玩的。</p>
+				<p>我的邮箱：<a class="not-prose hover:text-accent no-underline" href="mailto:honk@tadorna-ferruginea.com"><Icon aria-hidden="true" class="inline-block h-5 w-5 align-middle" name="mdi:email-outline" /><span class="ms-1">honk@tadorna-ferruginea.com</span></a></p>
+				<p>欢迎 NYC 附近的朋友们抓我出来玩，尤其是需要（破）车和司机的话！</p>
+				<p class="not-prose mt-8 mb-2">我当守门员 be like：</p>
+				<figure class="m-0">
+					<img alt="Nicole 在黄昏的草地上当守门员" class="w-full max-w-sm" loading="lazy" src="/images/nicole-goalkeeper.png" />
+				</figure>
+				<div class="not-prose mt-12 border-t border-border pt-6">
+					<h2 class="title mb-4 text-lg">版权与开源</h2>
+					<p>© 2026 Nicole Wu。除另有说明外，本站的文字与图片保留所有权利。</p>
+					<p>本站源代码以 <a href="https://github.com/tadorna-ferruginea/tech-blog/blob/main/LICENSE" rel="noreferrer" target="_blank">MIT License</a> 开源，基于 Chris Williams 的 <a href="https://github.com/chrismwilliams/astro-theme-cactus" rel="noreferrer" target="_blank">Astro Cactus</a> 二次开发；原始署名与致谢见 <a href="https://github.com/tadorna-ferruginea/tech-blog/blob/main/NOTICE.md" rel="noreferrer" target="_blank">NOTICE</a>。</p>
+				</div>
+			</section>
+		) : (
+			<section class="prose reading-prose font-prose max-w-none">
+				<p>I am Nicole, currently a 3rd-year PhD student in physics at CUNY Graduate Center.</p>
+				<p>I'm from Hebei, China. If you're curious about where I grew up, I'd strongly recommend the film <em>An Elephant Sitting Still</em> and the band Omnipotent Youth Society.</p>
+				<p>
+					Find me on <a aria-label="Nicole on GitHub" class="not-prose hover:text-accent inline-flex align-text-bottom" href="https://github.com/tadorna-ferruginea" rel="noreferrer" target="_blank"><Icon aria-hidden="true" class="h-5 w-5" name="mdi:github" /></a>,
+					though you probably won't find much of use there.
+				</p>
+				<p>You can reach me at <a class="not-prose hover:text-accent no-underline" href="mailto:honk@tadorna-ferruginea.com"><Icon aria-hidden="true" class="inline-block h-5 w-5 align-middle" name="mdi:email-outline" /><span class="ms-1">honk@tadorna-ferruginea.com</span></a>.</p>
+				<p>If you happen to be planning a trip around NYC and need a (junk) car, or you simply want to catch me in the city (got anything fun?), pleeease email me!</p>
+				<p class="not-prose mt-8 mb-2">Me as a goal keeper:</p>
+				<figure class="m-0">
+					<img alt="Nicole standing as a goalkeeper on a field at dusk" class="w-full max-w-sm" loading="lazy" src="/images/nicole-goalkeeper.png" />
+				</figure>
+				<div class="not-prose mt-12 border-t border-border pt-6">
+					<h2 class="title mb-4 text-lg">Copyright &amp; open source</h2>
+					<p>© 2026 Nicole Wu. Unless otherwise noted, the writing and images on this site are all rights reserved.</p>
+					<p>The site source code is released under the <a href="https://github.com/tadorna-ferruginea/tech-blog/blob/main/LICENSE" rel="noreferrer" target="_blank">MIT License</a>. It is a derivative of Chris Williams’s <a href="https://github.com/chrismwilliams/astro-theme-cactus" rel="noreferrer" target="_blank">Astro Cactus</a>; the original attribution and notices are in <a href="https://github.com/tadorna-ferruginea/tech-blog/blob/main/NOTICE.md" rel="noreferrer" target="_blank">NOTICE</a>.</p>
+				</div>
+			</section>
+		)
+	}
 </PageLayout>

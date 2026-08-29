@@ -12,6 +12,9 @@ type Props<Tag extends HTMLTag> = Polymorphic<{ as: Tag }> & {
 const { as: Tag = "div", note, isPreview = false, locale } = Astro.props;
 const { Content } = await render(note);
 const slug = locale ? note.id.slice(`${locale}/`.length) : note.id;
+const hasTranslationNotice = /^(> (?:本文由 AI 模型|This post was translated from Nicole's original Chinese by))/.test(
+	note.body.trimStart(),
+);
 ---
 
 <article
@@ -40,8 +43,11 @@ const slug = locale ? note.id.slice(`${locale}/`.length) : note.id;
 		date={note.data.publishDate}
 	/>
 	<div
-		class="prose prose-sm prose-cactus mt-4 max-w-none [&>p:last-of-type]:mb-0"
-		class:list={{ "line-clamp-6": isPreview }}
+		class="prose reading-prose prose-cactus font-prose mt-4 max-w-none [&>p:last-of-type]:mb-0"
+		class:list={{
+			"line-clamp-6": isPreview,
+			"[&>blockquote:first-child]:hidden": isPreview && hasTranslationNotice,
+		}}
 	>
 		<Content />
 	</div>

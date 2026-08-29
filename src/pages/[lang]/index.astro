@@ -19,7 +19,8 @@ const copy =
 		? {
 			description: "收集日常生活碎片的个人池塘。",
 			headline: "Honk, 欢迎来到我的池塘！",
-			intro: "我会在这里收集一些闪闪发光的碎片。包括但不限于物理，数学，算法，电影，菜谱，插画，音乐，书籍，汽车维修，以及如何在预算紧张的情况下改善生活质量。",
+			intro: "我会在这里收集一些闪闪发光的碎片。包括但不限于物理，数学，算法，电影，菜谱，插画，音乐，书籍，汽车维修，以及如何在预算紧张的情况下改善生活质量",
+			readMore: "阅读全文",
 			notes: "随记",
 			pinned: "置顶文章",
 			posts: "文章",
@@ -28,7 +29,8 @@ const copy =
 		: {
 			description: "A personal pond for fragments of everyday life.",
 			headline: "Honk, Welcome to My Pond!",
-			intro: "Here I am collecting some shiny fragments: physics, math, algorithms, films, recipes, illustrations, music, books, car repairs, and ways to improve one’s quality of life on a tight budget, among other things.",
+			intro: "Here I will collect some glimmering fragments: physics, mathematics, algorithms, films, recipes, illustrations, music, books, car repairs, and ways to improve one’s quality of life on a tight budget, among other things",
+			readMore: "Read the full post",
 			notes: "Notes",
 			pinned: "Pinned Posts",
 			posts: "Posts",
@@ -37,9 +39,12 @@ const copy =
 ---
 
 <PageLayout locale={locale} meta={{ description: copy.description, title: copy.title }}>
-	<section class="prose prose-sm max-w-none">
+	<section>
 		<h1 class="title mb-12">{copy.headline}</h1>
-		<p>{copy.intro}</p>
+		<div class="prose reading-prose font-prose max-w-none">
+			<p>{copy.intro}{locale === "zh" ? "……" : "..."}</p>
+			<p><a href={`/${locale}/posts/sparse-reward-water/`}>{copy.readMore}</a></p>
+		</div>
 	</section>
 	{
 		pinnedPosts.length > 0 && (

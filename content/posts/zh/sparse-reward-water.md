@@ -5,7 +5,7 @@ publishDate: 2026-08-28
 tags:
   - 写作
   - 生活
-pinned: true
+pinned: false
 ---
 
 Honk, 欢迎来到我的池塘！
@@ -21,4 +21,8 @@ Honk, 欢迎来到我的池塘！
 
 > 客喜而笑，洗盏更酌。肴核既尽，杯盘狼籍。相与枕藉乎舟中，不知东方之既白。
 
-文中引用皆出自 苏轼《前赤壁赋》
+<details class="quotation-notes">
+<summary>引文说明</summary>
+
+文中引文皆出自苏轼《前赤壁赋》。
+</details>

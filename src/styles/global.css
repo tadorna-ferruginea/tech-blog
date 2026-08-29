@@ -51,6 +51,7 @@
 
 /* you could refactor below to use light-dark(), depending on your target audience */
 @theme {
+	--font-prose: "Iowan Old Style", "Palatino Linotype", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", STSong, Georgia, serif;
 	--color-global-bg: oklch(98.48% 0 0);
 	--color-global-text: oklch(26.99% 0.0096 235.05);
 	--color-muted: oklch(44.6% 0.03 256.802);
@@ -126,6 +127,25 @@
 	.title {
 		@apply text-accent-2 text-2xl font-semibold;
 	}
+
+
+	.prose.reading-prose {
+		font-size: 1.0625rem;
+		line-height: 1.78;
+	}
+
+	.prose .translation-notes,
+	.prose .quotation-notes {
+		margin-block: 0 1.75rem;
+		font-size: 0.875em;
+	}
+
+	.prose .translation-notes summary,
+	.prose .quotation-notes summary {
+		cursor: pointer;
+		color: var(--color-muted);
+	}
+
 }
 
 @utility prose {
