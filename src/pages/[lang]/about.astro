@@ -9,12 +9,12 @@ export const getStaticPaths = (() => locales.map((lang) => ({ params: { lang } }
 const locale = Astro.params.lang as Locale;
 const copy =
 		locale === "zh"
-			? { description: "关于 Nicole 的网站。", title: "关于" }
-		: { description: "About Nicole.", text: "A physics PhD student, pond keeper, and occasional goalkeeper.", title: "About" };
+			? { description: "关于 Nicole 的网站。", heading: "关于我", title: "关于" }
+			: { description: "About Nicole.", heading: "About", text: "A physics PhD student, pond keeper, and occasional goalkeeper.", title: "About" };
 ---
 
 <PageLayout locale={locale} meta={{ description: copy.description, title: copy.title }}>
-	<h1 class="title mb-12">{copy.title}</h1>
+	<h1 class="title mb-12">{copy.heading}</h1>
 	{
 		locale === "zh" ? (
 			<section class="prose reading-prose font-prose max-w-none">
