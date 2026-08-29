@@ -73,3 +73,16 @@ src/
 - `archive/examples/` is intentionally outside the published content directories. Do not import
   it into content collections or edit it unless maintaining historical reference material.
 - When adding a new route or UI label, provide both Chinese and English text.
+
+## Public image privacy
+
+- Before adding any user-supplied image to `public/` or published content, create a separate
+  web-safe copy and automatically remove embedded EXIF, XMP, and IPTC metadata, including GPS
+  coordinates, capture time, device details, and author/contact fields. Never modify or delete the
+  user's original upload.
+- Inspect the public copy for visible personal data: faces, licence plates, email addresses,
+  telephone numbers, home or work addresses, IDs, QR/barcodes, and readable private screen or
+  document content. Report any detected sensitive details before publishing. Do not redact, blur,
+  crop, retouch, or otherwise alter the image's visible content without Nicole's explicit consent.
+- Preserve only the web-safe copy in the repository. Do not commit original image files containing
+  personal metadata or unredacted sensitive information.
