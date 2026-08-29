@@ -12,43 +12,82 @@ type Props<Tag extends HTMLTag> = Polymorphic<{ as: Tag }> & {
 const { as: Tag = "div", note, isPreview = false, locale } = Astro.props;
 const { Content } = await render(note);
 const slug = locale ? note.id.slice(`${locale}/`.length) : note.id;
+const firstImage = note.body.match(/!\[([^\]]*)\]\(([^\s)]+)(?:\s+[^)]*)?\)|<img\b(?=[^>]*\balt=["']([^"']*)["'])(?=[^>]*\bsrc=["']([^"']+)["'])[^>]*>/i);
+const thumbnail = note.data.thumbnail ?? (firstImage
+	? {
+		alt: firstImage[1] ?? firstImage[3],
+		src: firstImage[2] ?? firstImage[4],
+	}
+	: undefined);
 const hasTranslationNotice = /^(> (?:本文由 AI 模型|This post was translated from Nicole's original Chinese by))/.test(
 	note.body.trimStart(),
 );
+const previewText = note.body
+	.replace(/<details\s+class=["']translation-notes["'][^>]*>[\s\S]*?<\/details>/gi, "")
+	.replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+	.replace(/<img\b[^>]*>/gi, "")
+	.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+	.replace(/<[^>]+>/g, "")
+	.replace(/[>#*_`]/g, "")
+	.replace(/\s+/g, " ")
+	.trim();
+const previewWords = locale === "en" ? previewText.split(/\s+/) : [];
 ---
 
 <article
-	class:list={[isPreview && "bg-global-text/5 inline-grid rounded-md px-4 py-3"]}
+	class:list={[isPreview && "note-preview bg-global-text/5 grid w-full rounded-md px-4 py-3"]}
 	data-pagefind-body={isPreview ? false : true}
 >
-	<Tag class="title" class:list={{ "text-base": isPreview }}>
+	<div class:list={{ "grid grid-cols-[minmax(0,1fr)_8rem] gap-3 sm:grid-cols-[minmax(0,1fr)_10rem] sm:gap-4": isPreview && thumbnail }}>
+		<div class="min-w-0 overflow-hidden">
+			<Tag class="title" class:list={{ "text-base line-clamp-1": isPreview }}>
+				{
+					isPreview ? (
+						<a class="cactus-link" href={locale ? `/${locale}/notes/${slug}/` : `/notes/${note.id}/`}>
+							{note.data.title}
+						</a>
+					) : (
+						<>{note.data.title}</>
+					)
+				}
+			</Tag>
+			<FormattedDate
+				dateTimeOptions={{
+					hour: "2-digit",
+					minute: "2-digit",
+					year: "2-digit",
+					month: "2-digit",
+					day: "2-digit",
+				}}
+				date={note.data.publishDate}
+			/>
+			<div
+				class="note-content prose reading-prose prose-cactus font-prose mt-4 max-w-none [&>p:last-of-type]:mb-0"
+				class:list={{
+					"[&>blockquote:first-child]:hidden": isPreview && hasTranslationNotice,
+				}}
+			>
+				{
+					isPreview ? (
+						<p class="note-preview-text line-clamp-1 sm:line-clamp-2">
+							{locale === "en"
+								? previewWords.map((word, index) => (
+									<><span class="note-preview-word">{word}</span>{index < previewWords.length - 1 ? " " : ""}</>
+								))
+								: previewText}
+						</p>
+					) : (
+						<Content />
+					)
+				}
+			</div>
+		</div>
 		{
-			isPreview ? (
-				<a class="cactus-link" href={locale ? `/${locale}/notes/${slug}/` : `/notes/${note.id}/`}>
-					{note.data.title}
+			isPreview && thumbnail && (
+				<a class="block" href={locale ? `/${locale}/notes/${slug}/` : `/notes/${note.id}/`} aria-label={note.data.title}>
+					<img alt={thumbnail.alt} class="note-thumbnail" loading="lazy" src={thumbnail.src} />
 				</a>
-			) : (
-				<>{note.data.title}</>
 			)
 		}
-	</Tag>
-	<FormattedDate
-		dateTimeOptions={{
-			hour: "2-digit",
-			minute: "2-digit",
-			year: "2-digit",
-			month: "2-digit",
-			day: "2-digit",
-		}}
-		date={note.data.publishDate}
-	/>
-	<div
-		class="prose reading-prose prose-cactus font-prose mt-4 max-w-none [&>p:last-of-type]:mb-0"
-		class:list={{
-			"line-clamp-6": isPreview,
-			"[&>blockquote:first-child]:hidden": isPreview && hasTranslationNotice,
-		}}
-	>
-		<Content />
 	</div>
 </article>

@@ -146,6 +146,58 @@
 		color: var(--color-muted);
 	}
 
+	.note-content img {
+		width: min(100%, 24rem);
+		height: auto;
+	}
+
+	.note-preview .note-content img {
+		display: none;
+	}
+
+	.note-preview .note-content {
+		hyphens: none;
+		overflow-wrap: normal;
+		word-break: normal;
+	}
+
+	.note-preview .note-content:lang(en) {
+		word-break: keep-all;
+	}
+
+	.note-preview-word {
+		display: inline-block;
+		white-space: nowrap;
+	}
+
+	.note-preview > div {
+		height: 100%;
+	}
+
+	.note-preview {
+		height: 7.5rem;
+		overflow: hidden;
+	}
+
+	@media (min-width: 40rem) {
+		.note-preview {
+			height: 9rem;
+		}
+	}
+
+	.note-thumbnail {
+		height: 6rem;
+		object-fit: cover;
+		width: 8rem;
+	}
+
+	@media (min-width: 40rem) {
+		.note-thumbnail {
+			height: 7.5rem;
+			width: 10rem;
+		}
+	}
+
 }
 
 @utility prose {

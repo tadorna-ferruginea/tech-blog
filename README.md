@@ -1,6 +1,6 @@
-# Astro Ruddy_Shelduck
+# Astro Croissant
 
-Astro Ruddy_Shelduck is a quiet, hand-drawn starter for a personal blog, research notes, and slowly collected ideas. Its header pairs a ruddy shelduck with layered green water ripples: all ripples are visible at rest, then redraw from the inside out on hover or keyboard focus.
+Astro Croissant is a quiet, hand-drawn starter for a personal blog, research notes, and slowly collected ideas. Its header pairs a ruddy shelduck with layered green water ripples: all ripples are visible at rest, then redraw from the inside out on hover or keyboard focus.
 
 It is built with Astro, Markdown/MDX content collections, Tailwind CSS, local search, RSS, responsive layouts, light and dark modes, and automatically generated social images.
 
@@ -39,6 +39,6 @@ pnpm check
 
 ## License and attribution
 
-Astro Ruddy_Shelduck is a derivative of [Astro Cactus](https://github.com/chrismwilliams/astro-theme-cactus) by Chris Williams.
+Astro Croissant is a derivative of [Astro Cactus](https://github.com/chrismwilliams/astro-theme-cactus) by Chris Williams.
 
-Both the original work and this derivative are released under the MIT License. The original copyright and permission notice are retained in [LICENSE](./LICENSE), as required by MIT. See [NOTICE.md](./NOTICE.md) for the concise attribution record.
+Code is released under the MIT License; site content is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The original copyright and permission notice are retained in [LICENSE](./LICENSE), as required by MIT. See [NOTICE.md](./NOTICE.md) for the concise attribution record.

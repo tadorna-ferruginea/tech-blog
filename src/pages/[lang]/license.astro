@@ -1,0 +1,41 @@
+---
+import type { GetStaticPaths } from "astro";
+import mitLicense from "../../../LICENSE?raw";
+import { locales, type Locale } from "@/i18n";
+import PageLayout from "@/layouts/Base.astro";
+
+export const getStaticPaths = (() => locales.map((lang) => ({ params: { lang } }))) satisfies GetStaticPaths;
+
+const locale = Astro.params.lang as Locale;
+const copy = locale === "zh"
+	? { description: "赤麻鸭的池塘的版权与许可说明。", title: "许可" }
+	: { description: "Copyright and license information for Ruddy Shelduck’s Pond.", title: "License" };
+---
+
+<PageLayout locale={locale} meta={copy}>
+	<section class="prose reading-prose font-prose max-w-none">
+		<h1 class="title mb-12">{copy.title}</h1>
+		{
+			locale === "zh" ? (
+				<>
+					<p>本站文章、图片等非代码内容采用 <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">CC BY 4.0</a> 许可；代码与代码片段采用 MIT 许可。</p>
+					<p>引用他人受版权保护的译文或其他材料时，其原有许可不受本站许可影响；相关来源与使用说明会在对应段落下方单独标注。</p>
+				</>
+			) : (
+				<>
+					<p>Non-code content on this site, including writing and images, is licensed under <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">CC BY 4.0</a>. Code and code snippets are licensed under MIT.</p>
+					<p>When this site quotes a copyrighted translation or other third-party material, its original license is unaffected; the source and use will be noted with the relevant passage.</p>
+				</>
+			)
+		}
+		<h2>{locale === "zh" ? "MIT 许可证" : "MIT License"}</h2>
+		<pre><code>{mitLicense}</code></pre>
+		{
+			locale === "zh" ? (
+				<p>Astro Croissant 基于 Chris Williams 的 <a href="https://github.com/chrismwilliams/astro-theme-cactus" rel="noreferrer" target="_blank">Astro Cactus</a> 二次开发；原始署名保留于 <a href="https://github.com/tadorna-ferruginea/tech-blog/blob/main/NOTICE.md" rel="noreferrer" target="_blank">NOTICE</a>。</p>
+			) : (
+				<p>Astro Croissant is based on Chris Williams’s <a href="https://github.com/chrismwilliams/astro-theme-cactus" rel="noreferrer" target="_blank">Astro Cactus</a>; original attribution is retained in <a href="https://github.com/tadorna-ferruginea/tech-blog/blob/main/NOTICE.md" rel="noreferrer" target="_blank">NOTICE</a>.</p>
+			)
+		}
+	</section>
+</PageLayout>
