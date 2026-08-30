@@ -7,7 +7,7 @@ import "@/styles/global.css";
 
 type Props = SiteMeta & { locale?: Locale; siteName?: string };
 
-const { articleDate, description, locale = "en", ogImage, siteName = siteConfig.title, title } = Astro.props;
+const { articleDate, description, locale = "en", ogImage, robots, siteName = siteConfig.title, title } = Astro.props;
 
 const titleSeparator = "•";
 const siteTitle = `${title} ${titleSeparator} ${siteName}`;
@@ -40,6 +40,7 @@ const socialImageURL = new URL(ogImage ? ogImage : "/social-card.png", Astro.url
 <meta content={siteTitle} name="title" />
 <meta content={description} name="description" />
 <meta content={siteConfig.author} name="author" />
+{robots && <meta content={robots} name="robots" />}
 
 {/* Open Graph / Facebook */}
 <meta content={articleDate ? "article" : "website"} property="og:type" />

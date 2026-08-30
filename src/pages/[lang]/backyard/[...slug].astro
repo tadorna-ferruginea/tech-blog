@@ -1,0 +1,27 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import PickupScheduler from "@/components/PickupScheduler.astro";
+import { getAllBackyardContent } from "@/data/backyard";
+import { locales, type Locale } from "@/i18n";
+import PageLayout from "@/layouts/Base.astro";
+
+export const getStaticPaths = (async () => {
+	const content = await getAllBackyardContent();
+	return locales.flatMap((lang) =>
+		content
+			.filter((entry) => entry.id.startsWith(`${lang}/`))
+			.map((entry) => ({
+				params: { lang, slug: entry.id.slice(`${lang}/`.length) },
+				props: { entry, locale: lang },
+			})),
+	);
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { entry, locale } = Astro.props as Props & { locale: Locale };
+---
+
+<PageLayout locale={locale} meta={{ description: entry.data.description, robots: "noindex, nofollow", title: entry.data.title }}>
+	{entry.data.widget === "pickup-scheduler" && <PickupScheduler locale={locale} />}
+</PageLayout>

@@ -9,6 +9,17 @@ interface Props {
 }
 
 const { locale } = Astro.props;
+const isBackyard = Astro.url.pathname.startsWith(`/${locale}/backyard/`);
+const duckDestination = isBackyard ? `/${locale}/` : `/${locale}/backyard/`;
+const currentSiteName = isBackyard ? (locale === "zh" ? "赤麻鸭的后花园" : "Ruddy Shelduck’s Backyard") : siteNames[locale];
+const titleDestination = isBackyard ? `/${locale}/backyard/` : `/${locale}/`;
+const duckLabel = isBackyard
+	? locale === "zh"
+		? "回到赤麻鸭的池塘"
+		: "Return to Ruddy Shelduck’s Pond"
+	: locale === "zh"
+		? "前往赤麻鸭的后花园"
+		: "Visit Ruddy Shelduck’s Backyard";
 const menuLinks = [
 	{ path: "/", title: labels[locale].home },
 	{ path: "/about/", title: labels[locale].about },
@@ -19,11 +30,8 @@ const menuLinks = [
 
 <header class="group relative mb-28 flex items-center" id="main-header">
 	<div class="flex sm:flex-col">
-		<a
-			aria-current={Astro.url.pathname === "/" ? "page" : false}
-			class="site-logo inline-flex flex-col items-start"
-			href={`/${locale}/`}
-		>
+		<div class="site-logo inline-flex flex-col items-start">
+			<a aria-label={duckLabel} class="backyard-toggle" href={duckDestination}>
 			<span aria-hidden="true" class="duck-mascot signature-mark">
 				<img alt="" class="duck-image" height="1024" src="/images/ruddy-shelduck-no-water.png" width="1536" />
 				<img alt="" class="water-ripple ripple-one" height="825" src="/images/water-ripple-1.png" width="1906" />
@@ -31,8 +39,15 @@ const menuLinks = [
 				<img alt="" class="water-ripple ripple-three" height="825" src="/images/water-ripple-3.png" width="1906" />
 				<img alt="" class="water-ripple ripple-four" height="825" src="/images/water-ripple-4.png" width="1906" />
 			</span>
-			<span class="text-xl font-bold sm:text-2xl">{siteNames[locale]}</span>
-		</a>
+			</a>
+			<a
+				aria-current={Astro.url.pathname === titleDestination ? "page" : false}
+				class="site-title"
+				href={titleDestination}
+			>
+			<span class="text-xl font-bold sm:text-2xl">{currentSiteName}</span>
+			</a>
+		</div>
 		<nav
 			aria-label="Main"
 			class="bg-global-bg absolute -inset-x-4 top-12 hidden flex-col divide-y px-2 py-4 group-[.menu-open]:z-50 group-[.menu-open]:flex sm:static sm:z-auto sm:-ms-4 sm:mt-1 sm:flex sm:flex-row sm:divide-x sm:divide-y-0 sm:bg-transparent sm:p-0"
@@ -114,6 +129,17 @@ const menuLinks = [
 	}
 
 	customElements.define("mobile-button", MobileNavBtn);
+
+	const backyardToggle = document.querySelector<HTMLAnchorElement>(".backyard-toggle");
+	backyardToggle?.addEventListener("click", (event) => {
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+		event.preventDefault();
+		backyardToggle.classList.add("is-crossing");
+		window.setTimeout(() => {
+			window.location.assign(backyardToggle.href);
+		}, 720);
+	});
 </script>
 
 <style>
@@ -159,27 +185,55 @@ const menuLinks = [
 		transform-origin: center;
 	}
 
-	.site-logo:hover .water-ripple,
-	.site-logo:focus-visible .water-ripple {
+	.backyard-toggle:hover .water-ripple,
+	.backyard-toggle:focus-visible .water-ripple {
 		animation: show-water-ripple 150ms ease-out both;
 	}
 
-	.site-logo:hover .ripple-two,
-	.site-logo:focus-visible .ripple-two {
+	.backyard-toggle:hover .ripple-two,
+	.backyard-toggle:focus-visible .ripple-two {
 		animation-delay: 180ms;
 	}
 
-	.site-logo:hover .ripple-three,
-	.site-logo:focus-visible .ripple-three {
+	.backyard-toggle:hover .ripple-three,
+	.backyard-toggle:focus-visible .ripple-three {
 		animation-delay: 360ms;
 	}
 
-	.site-logo:hover .ripple-four,
-	.site-logo:focus-visible .ripple-four {
+	.backyard-toggle:hover .ripple-four,
+	.backyard-toggle:focus-visible .ripple-four {
+		animation-delay: 540ms;
+	}
+
+	.backyard-toggle.is-crossing .water-ripple {
+		animation: show-water-ripple-crossing 150ms ease-out both;
+	}
+
+	.backyard-toggle.is-crossing .ripple-two {
+		animation-delay: 180ms;
+	}
+
+	.backyard-toggle.is-crossing .ripple-three {
+		animation-delay: 360ms;
+	}
+
+	.backyard-toggle.is-crossing .ripple-four {
 		animation-delay: 540ms;
 	}
 
 	@keyframes show-water-ripple {
+		from {
+			opacity: 0;
+			visibility: hidden;
+		}
+
+		to {
+			opacity: 1;
+			visibility: visible;
+		}
+	}
+
+	@keyframes show-water-ripple-crossing {
 		from {
 			opacity: 0;
 			visibility: hidden;
@@ -198,13 +252,13 @@ const menuLinks = [
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.site-logo:hover .drawn-ripples,
-		.site-logo:focus-visible .drawn-ripples {
+		.backyard-toggle:hover .drawn-ripples,
+		.backyard-toggle:focus-visible .drawn-ripples {
 			animation: none;
 		}
 
-		.site-logo:hover .water-ripple,
-		.site-logo:focus-visible .water-ripple {
+		.backyard-toggle:hover .water-ripple,
+		.backyard-toggle:focus-visible .water-ripple {
 			animation: none;
 			opacity: 1;
 			visibility: visible;

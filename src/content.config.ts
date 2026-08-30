@@ -54,6 +54,24 @@ const note = defineCollection({
 	}),
 });
 
+const backyard = defineCollection({
+	loader: glob({ base: "./content/backyard", pattern: "**/*.{md,mdx}" }),
+	schema: baseSchema.extend({
+		description: z.string(),
+		draft: z.boolean().default(false),
+		publishDate: z
+			.string()
+			.or(z.date())
+			.transform((val) => new Date(val)),
+		updatedDate: z
+			.string()
+			.optional()
+			.transform((str) => (str ? new Date(str) : undefined)),
+		pinned: z.boolean().default(false),
+		widget: z.enum(["pickup-scheduler"]),
+	}),
+});
+
 const tag = defineCollection({
 	loader: glob({ base: "./content/tags", pattern: "**/*.{md,mdx}" }),
 	schema: z.object({
@@ -62,4 +80,4 @@ const tag = defineCollection({
 	}),
 });
 
-export const collections = { post, note, tag };
+export const collections = { backyard, post, note, tag };

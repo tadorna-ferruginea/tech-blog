@@ -1,4 +1,5 @@
 import { getCollection } from "astro:content";
+import { getAllBackyardContent } from "@/data/backyard";
 import { getAllPosts } from "@/data/post";
 import type { Locale } from "@/i18n";
 
@@ -20,6 +21,11 @@ export function getFeedDetails(locale: Locale, type: "posts" | "notes") {
 export async function getLocalizedPosts(locale: Locale) {
 	const posts = await getAllPosts();
 	return posts.filter((post) => post.id.startsWith(`${locale}/`));
+}
+
+export async function getLocalizedBackyardContent(locale: Locale) {
+	const content = await getAllBackyardContent();
+	return content.filter((entry) => entry.id.startsWith(`${locale}/`));
 }
 
 export async function getLocalizedNotes(locale: Locale) {

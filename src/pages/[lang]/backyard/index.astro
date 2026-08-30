@@ -1,0 +1,69 @@
+---
+import FormattedDate from "@/components/FormattedDate.astro";
+import { getLocalizedBackyardContent, localizedSlug } from "@/data/rss";
+import { locales, type Locale } from "@/i18n";
+import PageLayout from "@/layouts/Base.astro";
+import { collectionDateSort } from "@/utils/date";
+
+export const getStaticPaths = () => locales.map((lang) => ({ params: { lang } }));
+
+const locale = Astro.params.lang as Locale;
+const copy =
+	locale === "zh"
+		? {
+			description: "赤麻鸭用来安排个人生活的小角落。",
+			headline: "误入藕花深处，争渡，争渡，惊起一滩鸥鹭",
+			intro: "这里是有关我的日常生活和朋友们的一小片私人水域。包含一些有访问控制的内容和服务。",
+			content: "内容",
+			pinnedContent: "置顶内容",
+			title: "赤麻鸭的后花园",
+			football: "有时间踢球吗？⚽️",
+		}
+		: {
+			description: "A small corner where Ruddy Shelduck keeps personal services.",
+			headline: "Lost among lotus blossoms—rowing, rowing—startling a shoal of gulls and herons",
+			intro: "A small private stretch of water for my everyday life and friends. It includes content and services with access controls.",
+			content: "Content",
+			pinnedContent: "Pinned Content",
+			title: "Ruddy Shelduck’s Backyard",
+			football: "Got time for ⚽️?",
+		};
+const content = await getLocalizedBackyardContent(locale);
+content.sort(collectionDateSort);
+const pinnedContent = content.filter((item) => item.data.pinned);
+---
+
+<PageLayout locale={locale} meta={{ description: copy.description, robots: "noindex, nofollow", title: copy.title }}>
+	<section>
+		<h1 class="title mb-12">{copy.headline}</h1>
+		<div class="prose reading-prose font-prose max-w-none">
+			<p>{copy.intro}</p>
+		</div>
+	</section>
+	{
+		pinnedContent.length > 0 && (
+			<section class="mt-16">
+				<h2 class="title text-xl">{copy.pinnedContent}</h2>
+				<ul class="mt-5 space-y-3">
+					{pinnedContent.map((item) => (
+						<li class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+							<FormattedDate class="text-muted font-semibold" date={item.data.publishDate} />
+							<a class="cactus-link" href={`/${locale}/backyard/${localizedSlug(locale, item.id)}/`}>{item.data.title}</a>
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
+	<section class="mt-12">
+		<h2 class="title text-accent mb-6 text-xl">{copy.content}</h2>
+		<ul class="mt-5 space-y-3">
+			{content.map((item) => (
+				<li class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+					<FormattedDate class="text-muted font-semibold" date={item.data.publishDate} />
+					<a class="cactus-link" href={`/${locale}/backyard/${localizedSlug(locale, item.id)}/`}>{item.data.title}</a>
+				</li>
+			))}
+		</ul>
+	</section>
+</PageLayout>

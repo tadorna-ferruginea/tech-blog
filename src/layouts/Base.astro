@@ -14,14 +14,14 @@ interface Props {
 }
 
 const {
-	meta: { articleDate, description = siteConfig.description, ogImage, title },
+	meta: { articleDate, description = siteConfig.description, ogImage, robots, title },
 	locale = getLocale(Astro.url.pathname),
 } = Astro.props;
 ---
 
 <html class="scroll-smooth" lang={locale === "zh" ? "zh-CN" : "en"}>
 	<head>
-		<BaseHead articleDate={articleDate} description={description} locale={locale} ogImage={ogImage} siteName={siteNames[locale]} title={title} />
+		<BaseHead articleDate={articleDate} description={description} locale={locale} ogImage={ogImage} robots={robots} siteName={siteNames[locale]} title={title} />
 		<ThemeProvider />
 	</head>
 	<body
@@ -29,7 +29,7 @@ const {
 	>
 		<SkipLink />
 		<Header locale={locale} />
-		<main id="main">
+		<main data-pagefind-ignore={robots ? true : undefined} id="main">
 			<slot />
 		</main>
 		<Footer locale={locale} />

@@ -1,0 +1,135 @@
+---
+import { Icon } from "astro-icon/components";
+import type { Locale } from "@/i18n";
+
+interface Props { locale: Locale; embedded?: boolean }
+const { locale, embedded = false } = Astro.props;
+const isZh = locale === "zh";
+const hours = ["12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM", "6 PM", "7 PM"];
+const copy = isZh
+	? { caption: "中央公园 · 纽约时间 · 示例数据", description: "未来七天，每天中午十二点到晚上八点。天气是背景；每格只放天气、气温、人数和球。", heading: "约球时间表", ball: "有球", people: "人", peopleLabel: "人数", temperature: "气温（℃）", weather: "天气" }
+	: { caption: "Central Park · New York time · sample data", description: "Seven rolling days, noon to 8pm. Weather is the background; each cell shows weather, temperature, people, and a ball.", heading: "Pickup schedule", ball: "ball available", people: "people", peopleLabel: "people", temperature: "temperature (°C)", weather: "weather" };
+
+type Weather = "clear" | "mainly-clear" | "partly-cloudy" | "cloud" | "fog" | "drizzle" | "rain" | "heavy-rain" | "freezing-rain" | "snow" | "heavy-snow" | "thunderstorm" | "hail";
+type Day = { day: string; date: string; weather: Weather[]; temperatures: number[]; people: number[]; balls: boolean[] };
+const zhDays: Day[] = [
+	{ day: "周六", date: "08.29", weather: ["clear", "clear", "clear", "cloud", "cloud", "cloud", "cloud", "cloud"], temperatures: [22, 23, 24, 25, 25, 24, 23, 22], people: [2, 3, 4, 4, 4, 3, 2, 1], balls: [false, true, true, true, true, true, false, false] },
+	{ day: "周日", date: "08.30", weather: ["cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "cloud"], temperatures: [21, 22, 22, 23, 23, 22, 22, 21], people: [2, 3, 5, 5, 5, 4, 3, 2], balls: [false, true, true, true, true, true, true, false] },
+	{ day: "周一", date: "08.31", weather: ["cloud", "cloud", "drizzle", "drizzle", "rain", "rain", "cloud", "cloud"], temperatures: [20, 21, 21, 22, 22, 21, 21, 20], people: [0, 1, 1, 1, 1, 1, 1, 0], balls: [false, false, false, false, false, false, false, false] },
+	{ day: "周二", date: "09.01", weather: ["cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "clear", "clear"], temperatures: [20, 21, 22, 23, 24, 24, 23, 22], people: [1, 1, 2, 2, 2, 2, 1, 1], balls: [false, false, false, false, false, false, false, false] },
+	{ day: "周三", date: "09.02", weather: ["clear", "clear", "clear", "clear", "clear", "clear", "clear", "clear"], temperatures: [22, 23, 24, 25, 26, 26, 25, 23], people: [1, 2, 3, 3, 3, 3, 2, 1], balls: [false, true, true, true, true, true, false, false] },
+	{ day: "周四", date: "09.03", weather: ["clear", "clear", "clear", "clear", "cloud", "cloud", "cloud", "cloud"], temperatures: [23, 24, 25, 27, 27, 26, 24, 23], people: [1, 2, 3, 3, 3, 2, 2, 1], balls: [false, false, false, false, false, false, false, false] },
+	{ day: "周五", date: "09.04", weather: ["cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "cloud"], temperatures: [21, 22, 23, 24, 24, 23, 22, 21], people: [0, 1, 2, 2, 2, 2, 1, 0], balls: [false, false, true, true, true, true, false, false] },
+];
+const enNames = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
+const days = zhDays.map((day, index) => ({ ...day, day: isZh ? day.day : enNames[index]! }));
+const weatherIcons: Record<Weather, string> = {
+	clear: "mdi:weather-sunny", "mainly-clear": "mdi:weather-sunny", "partly-cloudy": "mdi:weather-partly-cloudy", cloud: "mdi:weather-cloudy", fog: "mdi:weather-fog",
+	drizzle: "mdi:weather-rainy", rain: "mdi:weather-rainy", "heavy-rain": "mdi:weather-pouring", "freezing-rain": "mdi:weather-snowy-rainy",
+	snow: "mdi:weather-snowy", "heavy-snow": "mdi:weather-snowy-heavy", thunderstorm: "mdi:weather-lightning-rainy", hail: "mdi:weather-hail",
+};
+const weatherLabels = isZh
+	? { clear: "晴", "mainly-clear": "大部晴朗", "partly-cloudy": "局部多云", cloud: "阴", fog: "雾", drizzle: "毛毛雨", rain: "雨", "heavy-rain": "大雨", "freezing-rain": "冻雨", snow: "雪", "heavy-snow": "大雪", thunderstorm: "雷暴", hail: "冰雹" }
+	: { clear: "Clear sky", "mainly-clear": "Mainly clear", "partly-cloudy": "Partly cloudy", cloud: "Overcast", fog: "Fog", drizzle: "Drizzle", rain: "Rain", "heavy-rain": "Heavy rain", "freezing-rain": "Freezing rain", snow: "Snow", "heavy-snow": "Heavy snow", thunderstorm: "Thunderstorm", hail: "Hail" };
+---
+
+<section class:list={{ scheduler: true, embedded }} aria-label={copy.heading}>
+	{
+		!embedded && (
+			<>
+				<p class="scheduler-caption">{copy.caption}</p>
+				<h1 class="title mb-4">{copy.heading}</h1>
+				<p class="prose reading-prose font-prose max-w-2xl">{copy.description}</p>
+			</>
+		)
+	}
+
+	<div class="scheduler-scroll">
+		<div class="scheduler-grid">
+			<div class="day-headings">
+				{days.map(({ day, date }) => <div class="day-heading"><strong>{day}</strong><span>{date}</span></div>)}
+			</div>
+			{
+				hours.map((hour, hourIndex) => (
+					<div class="hour-row">
+						<span class="hour-label">{hour}</span>
+						{
+							days.map((day) => {
+								const weather = day.weather[hourIndex]!;
+								const temperature = day.temperatures[hourIndex]!;
+								const people = day.people[hourIndex]!;
+								const ball = day.balls[hourIndex]!;
+								return (
+									<div class={`slot ${weather}`} aria-label={`${day.day} ${hour}: ${weatherLabels[weather]}, ${temperature}°C, ${people} ${copy.people}${ball ? `, ${copy.ball}` : ""}`}>
+										<span class="temperature">{temperature}°</span>
+										{ball && <span class="ball" aria-hidden="true">⚽</span>}
+										<Icon aria-hidden="true" class="weather-icon" name={weatherIcons[weather]} />
+										<strong class:list={{ empty: people === 0 }}>{people || "—"}</strong>
+									</div>
+								);
+							})
+						}
+						{hourIndex === hours.length - 1 && <span class="hour-label end-hour-label">8 PM</span>}
+					</div>
+				))
+			}
+		</div>
+	</div>
+
+	<div class="scheduler-legend">
+		<span><Icon aria-hidden="true" name="mdi:weather-cloudy" /> {copy.weather}</span>
+		<span><strong>3</strong> {copy.peopleLabel}</span>
+		<span>⚽ {copy.ball}</span>
+		<span><strong>22°</strong> {copy.temperature}</span>
+	</div>
+</section>
+
+<style>
+	.scheduler { margin-top: 3rem; }
+	.scheduler.embedded { margin-top: 0; }
+	.scheduler-caption { margin: 0 0 .75rem; color: var(--color-muted); font-size: .75rem; }
+	.scheduler-scroll { width: min(100%, 36rem); margin: 2rem 0 0; overflow-x: auto; border-top: 1px dashed color-mix(in oklab, var(--color-global-text) 38%, transparent); border-bottom: 1px dashed color-mix(in oklab, var(--color-global-text) 38%, transparent); }
+	.scheduler-grid { min-width: 23rem; padding: .8rem 0 .8rem 2.65rem; }
+	.day-headings, .hour-row { display: grid; grid-template-columns: repeat(7, minmax(2.85rem, 1fr)); gap: 2px; }
+	.day-heading { padding: 0 .4rem .55rem; color: var(--color-accent-2); font-size: .75rem; text-align: center; }
+	.day-heading span { display: block; margin-top: .12rem; color: var(--color-muted); font-size: .6875rem; font-weight: 400; }
+	.hour-row { position: relative; }
+	.hour-label { position: absolute; top: 0; right: calc(100% + .45rem); z-index: 1; color: var(--color-muted); font-size: .6rem; line-height: 1; transform: translateY(-50%); white-space: nowrap; }
+	.end-hour-label { top: auto; bottom: 0; transform: translateY(50%); }
+	.slot { position: relative; min-height: 2.85rem; padding: .25rem .34rem; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-global-text) 7%, transparent); }
+	.slot.clear { background: color-mix(in oklab, #f4d77b 38%, var(--color-global-bg)); }
+	.slot.mainly-clear { background: color-mix(in oklab, #f0dda1 30%, var(--color-global-bg)); }
+	.slot.partly-cloudy { background: color-mix(in oklab, #c6d4d8 26%, var(--color-global-bg)); }
+	.slot.cloud { background: color-mix(in oklab, #9bb8c8 22%, var(--color-global-bg)); }
+	.slot.fog { background: color-mix(in oklab, #bac2c4 27%, var(--color-global-bg)); }
+	.slot.drizzle { background: color-mix(in oklab, #8dbbce 26%, var(--color-global-bg)); }
+	.slot.rain { background: color-mix(in oklab, #71a9c7 30%, var(--color-global-bg)); }
+	.slot.heavy-rain { background: color-mix(in oklab, #5a95b7 40%, var(--color-global-bg)); }
+	.slot.freezing-rain { background: color-mix(in oklab, #b5b6d7 31%, var(--color-global-bg)); }
+	.slot.snow { background: color-mix(in oklab, #d8e7ed 42%, var(--color-global-bg)); }
+	.slot.heavy-snow { background: color-mix(in oklab, #b7d3df 38%, var(--color-global-bg)); }
+	.slot.thunderstorm { background: color-mix(in oklab, #9491bd 35%, var(--color-global-bg)); }
+	.slot.hail { background: color-mix(in oklab, #c1cbd4 38%, var(--color-global-bg)); }
+	.temperature { position: absolute; top: .25rem; left: .34rem; color: var(--color-muted); font-size: .625rem; }
+	.weather-icon { position: absolute; top: .22rem; right: .28rem; width: 1.1rem; height: 1.1rem; color: var(--color-accent-2); opacity: .72; }
+	.slot strong { position: absolute; right: .34rem; bottom: .24rem; color: var(--color-accent-2); font-size: 1.18rem; line-height: 1; }
+	.slot strong.empty { color: var(--color-muted); font-size: 1rem; font-weight: 400; }
+	.ball { position: absolute; left: .3rem; bottom: .22rem; font-size: .62rem; }
+	.scheduler-legend { display: flex; flex-wrap: wrap; gap: .45rem 1rem; margin-top: .85rem; color: var(--color-muted); font-size: .6875rem; }
+	.scheduler-legend span { display: inline-flex; align-items: center; gap: .25rem; white-space: nowrap; }
+	.scheduler-legend :global(svg) { width: .85rem; height: .85rem; vertical-align: -.18rem; }
+	.scheduler-legend strong { color: var(--color-accent-2); }
+
+	@media (max-width: 420px) {
+		.scheduler-grid { min-width: 0; padding-left: 2.25rem; }
+		.day-headings, .hour-row { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+		.day-heading { padding-inline: .2rem; font-size: .6875rem; }
+		.day-heading span { font-size: .6rem; }
+		.hour-label { right: calc(100% + .32rem); font-size: .55rem; }
+		.slot { min-height: 2.75rem; padding-inline: .25rem; }
+		.temperature { left: .25rem; font-size: .56rem; }
+		.weather-icon { right: .2rem; width: .95rem; height: .95rem; }
+		.slot strong { right: .25rem; font-size: 1.1rem; }
+		.ball { left: .22rem; font-size: .56rem; }
+	}
+</style>
