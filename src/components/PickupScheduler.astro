@@ -7,7 +7,7 @@ const { locale, embedded = false } = Astro.props;
 const isZh = locale === "zh";
 const hours = ["12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM", "6 PM", "7 PM"];
 const copy = isZh
-	? { caption: "中央公园 · 纽约时间 · 示例数据", description: "未来七天，每天中午十二点到晚上八点。天气是背景；每格只放天气、气温、人数和球。", heading: "约球时间表", ball: "有球", people: "人", peopleLabel: "人数", temperature: "气温（℃）", weather: "天气" }
+	? { caption: "中央公园 · 纽约时间 · 示例数据", description: "未来七天，每天中午十二点到晚上八点。天气是背景；每格只放天气、气温、人数和球。", heading: "约球时间表", ball: "有球", people: "人", peopleLabel: "人数", temperature: "气温（°C）", weather: "天气" }
 	: { caption: "Central Park · New York time · sample data", description: "Seven rolling days, noon to 8pm. Weather is the background; each cell shows weather, temperature, people, and a ball.", heading: "Pickup schedule", ball: "ball available", people: "people", peopleLabel: "people", temperature: "temperature (°C)", weather: "weather" };
 
 type Weather = "clear" | "mainly-clear" | "partly-cloudy" | "cloud" | "fog" | "drizzle" | "rain" | "heavy-rain" | "freezing-rain" | "snow" | "heavy-snow" | "thunderstorm" | "hail";
