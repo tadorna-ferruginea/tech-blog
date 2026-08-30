@@ -12,7 +12,7 @@ const copy =
 	locale === "zh"
 		? {
 			description: "赤麻鸭用来安排个人生活的小角落。",
-			headline: "误入藕花深处，争渡，争渡，惊起一滩鸥鹭",
+			headline: ["误入藕花深处，争渡，争渡，惊起一滩鸥鹭"],
 			intro: "这里是有关我的日常生活和朋友们的一小片私人水域。包含一些有访问控制的内容和服务。",
 			content: "内容",
 			pinnedContent: "置顶内容",
@@ -21,7 +21,7 @@ const copy =
 		}
 		: {
 			description: "A small corner where Ruddy Shelduck keeps personal services.",
-			headline: "Lost among lotus blossoms—rowing, rowing—startling a shoal of gulls and herons",
+			headline: ["Lost among lotus blossoms.", "Rowing, rowing,", "startling a shoal of gulls", "and herons."],
 			intro: "A small private stretch of water for my everyday life and friends. It includes content and services with access controls.",
 			content: "Content",
 			pinnedContent: "Pinned Content",
@@ -35,7 +35,7 @@ const pinnedContent = content.filter((item) => item.data.pinned);
 
 <PageLayout locale={locale} meta={{ description: copy.description, robots: "noindex, nofollow", title: copy.title }}>
 	<section>
-		<h1 class="title mb-12">{copy.headline}</h1>
+		<h1 class="title mb-12">{copy.headline.map((line) => <span class="block">{line}</span>)}</h1>
 		<div class="prose reading-prose font-prose max-w-none">
 			<p>{copy.intro}</p>
 		</div>
