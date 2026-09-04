@@ -242,6 +242,9 @@ const weatherLabels = isZh
 		return descriptions[code]?.[chinese ? 0 : 1] ?? (chinese ? "未知天气" : "Unknown weather");
 	};
 	document.querySelectorAll<HTMLElement>("[data-scheduler]").forEach((scheduler) => {
+		// Production uses the same-origin Worker route; local development keeps its
+		// explicit localhost Worker URL from the build-time configuration above.
+		if (!scheduler.dataset.apiBase) scheduler.dataset.apiBase = window.location.origin;
 		const accessButton = scheduler.querySelector<HTMLButtonElement>("[data-scheduler-access]")!;
 		const logoutButton = scheduler.querySelector<HTMLButtonElement>("[data-scheduler-logout]")!;
 		const currentUserLabel = scheduler.querySelector<HTMLElement>("[data-scheduler-current-user]")!;

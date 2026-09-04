@@ -3,6 +3,13 @@
   "name": "pickup-scheduler",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "https://tadorna-ferruginea.com/api/pickup/*",
+      "zone_name": "tadorna-ferruginea.com"
+    }
+  ],
   "observability": {
     "enabled": true
   },
@@ -13,7 +20,7 @@
     {
       "binding": "DB",
       "database_name": "pickup-scheduler",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "13cb259f-ebb0-4695-b3d0-db32402497ac",
       "migrations_dir": "migrations"
     }
   ]
