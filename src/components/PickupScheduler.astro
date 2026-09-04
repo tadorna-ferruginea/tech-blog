@@ -306,8 +306,8 @@ const weatherLabels = isZh
 		let canBringBall = false;
 		let availabilityDrag: { pointerId: number; canBringBall: boolean; touched: Set<string> } | undefined;
 		let activityDrag: { pointerId: number; start: HTMLButtonElement; end: HTMLButtonElement } | undefined;
-		let ignoreAvailabilityClick = false;
-		let ignoreActivityClick = false;
+		let suppressAvailabilityClickUntil = 0;
+		let suppressActivityClickUntil = 0;
 		let currentWeekStart = "";
 		let temperatureSwitches = 0;
 		let previousTemperatureUnit = "celsius";
@@ -975,7 +975,7 @@ const weatherLabels = isZh
 			slot.addEventListener("click", (event) => {
 				if (!unlocked) return;
 				if (mode === "availability") {
-					if (ignoreAvailabilityClick) return;
+					if (event.detail !== 0 && performance.now() < suppressAvailabilityClickUntil) return;
 					const bounds = slot.getBoundingClientRect();
 					const halfHour = Math.min(1, Math.max(0, Math.floor(((event.clientY - bounds.top) / bounds.height) * 2)));
 					updateAvailability(slot, halfHour, canBringBall);
@@ -983,7 +983,7 @@ const weatherLabels = isZh
 					return;
 				}
 				if (mode === "decision") {
-					if (ignoreActivityClick) return;
+					if (event.detail !== 0 && performance.now() < suppressActivityClickUntil) return;
 					confirmActivity(slot);
 					return;
 				}
@@ -1008,16 +1008,14 @@ const weatherLabels = isZh
 			if (availabilityDrag && event.pointerId === availabilityDrag.pointerId) {
 				availabilityDrag = undefined;
 				saveAvailability();
-				ignoreAvailabilityClick = true;
-				window.setTimeout(() => { ignoreAvailabilityClick = false; }, 0);
+				suppressAvailabilityClickUntil = performance.now() + 500;
 			}
 			if (activityDrag && event.pointerId === activityDrag.pointerId) {
 				const { start, end } = activityDrag;
 				activityDrag = undefined;
 				renderActivityRange();
 				confirmActivity(start, end);
-				ignoreActivityClick = true;
-				window.setTimeout(() => { ignoreActivityClick = false; }, 0);
+				suppressActivityClickUntil = performance.now() + 500;
 			}
 		});
 		document.addEventListener("pointercancel", (event) => {
