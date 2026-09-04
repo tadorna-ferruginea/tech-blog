@@ -13,7 +13,7 @@ thumbnail:
 This note was translated from Nicole's original Chinese by GPT-5; the Chinese original prevails.
 </details>
 
-The new semester has been underway for a week. Campus has suddenly become so lively and full of life that I am still a little unaccustomed to it. On Wednesday, I helped TA an extra astronomy lab. Professor Charls Liu is genuinely the kindest, most enthusiastic, and most gifted teacher I have ever met—there is not even room to add “one of.”
+The new semester has been underway for a week. Campus has suddenly become so lively and full of life that I am still a little unaccustomed to it. On Wednesday, I helped TA an extra astronomy lab. Professor Charles Liu is genuinely the kindest, most enthusiastic, and most gifted teacher I have ever met—there is not even room to add “one of.”
 
 <img alt="A line of docked Citi Bikes on a New York street." class="note-image" loading="lazy" src="/images/all-things-grow-2273.webp" />
 

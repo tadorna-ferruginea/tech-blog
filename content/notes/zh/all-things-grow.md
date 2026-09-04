@@ -7,7 +7,7 @@ thumbnail:
   src: /images/all-things-grow-2273.webp
 ---
 
-新学期开始一周了，学校变得非常热闹而有生气，让我稍微有点不适应。周三的时候帮忙去额外 TA 了一节天文学的实验课，Charls Liu 老师确实是我见过最可亲、最热心又最擅长于教学的老师了，甚至没法加上“之一”。
+新学期开始一周了，学校变得非常热闹而有生气，让我稍微有点不适应。周三的时候帮忙去额外 TA 了一节天文学的实验课，Charles Liu 老师确实是我见过最可亲、最热心又最擅长于教学的老师了，甚至没法加上“之一”。
 
 <img alt="纽约街头一排停靠的 Citi Bike。" class="note-image" loading="lazy" src="/images/all-things-grow-2273.webp" />
 
