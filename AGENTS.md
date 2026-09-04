@@ -8,6 +8,21 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+## Pickup scheduler Worker
+
+- The private pickup-scheduler service lives in `worker/`; it is a separate Cloudflare Worker, while Astro remains a static client.
+- Keep passwords, session secrets, individual names, availability, participant lists, comments, and activity records out of the Astro source. They belong in the Worker/D1 database only.
+- Keep production `SCHEDULER_PASSWORD`, `SESSION_SECRET`, and `ALLOWED_ORIGIN` as Cloudflare Secrets. Use `worker/.dev.vars` only for local development; never commit it.
+- Run D1 migrations locally before testing the Worker. The Worker’s hourly scheduled handler caches weather; the browser should read the Worker’s cached response rather than call the weather provider directly once integration is complete.
+- Keep authentication as a signed `HttpOnly`, `Secure`, `SameSite=Lax` cookie on the shared site origin, so an authenticated visitor remains authenticated when switching between the Chinese and English counterpart pages. Provide an explicit log-out path; the persistent-login choice is for a person's device, not a public computer.
+- Protect `POST /api/pickup/v1/login` with a Cloudflare edge rate-limiting rule before launch. It should identify excessive request volume per source IP (for example, ten requests per minute) and use Managed Challenge first. Do not implement per-person wrong-password lockouts in the Worker: the objective is to stop automation without punishing a real visitor who mistypes a shared password.
+- The Worker is the source of truth for availability, activities, comments, and cached weather. Astro may render an initial shell, but it must not invent or persist a parallel copy of these records once the API is connected.
+- If an AI needs schedule data, expose a separate, narrowly scoped, read-only MCP/API surface from the Worker (for example weekly summaries, confirmed activities, and a single slot's participants). Never expose arbitrary D1 queries, raw database access, or write tools to an AI client. Cloudflare's own account-management MCP is for infrastructure administration, not a substitute for this service-data boundary.
+- In the normal lifecycle, cache weather hourly, remove an activity once its end time in `America/New_York` has passed, and expire comments after 7 days. Order live comments newest first.
+- Activities may never overlap: reserve every occupied half-hour in D1 under a unique `(date, start_minute)` key. Check for conflicts in the UI for immediate feedback, but enforce the same rule in the Worker/database so concurrent requests and cross-language pages cannot double-publish a time.
+- Test the scheduler as one system, never as an isolated page mock: run Astro, the local Worker, and local D1 together; use the browser against Astro and verify that login, weather, availability, activities, RSVPs, comments, cross-language navigation, and failure responses travel through the Worker API. Do not add browser-storage fixtures or pretend client state is persistent service data.
+- Do not leave a scheduler control interactive until its corresponding Worker read/write path is connected and tested. A partially wired feature must be visibly unavailable, never silently mutate an in-memory sample and appear saved.
+
 ## Documentation
 
 Full documentation: https://docs.astro.build
@@ -139,19 +154,51 @@ content inside a Post or Backyard content page, not a reason to redesign the sur
   not become the layout baseline.
 - On desktop, constrain the schedule to a deliberate maximum width and align its left edge with
   the Post content. Do not centre a narrow table or let it grow indefinitely.
+- Limit the calendar and its immediate controls as one block. Keep surrounding prose, confirmed
+  activity cards, and comments aligned to the normal reading container rather than unnecessarily
+  narrowing them to the calendar.
 - Make the table compact by reducing blank space, cell padding, and row height — not by
   proportionally shrinking essential text or symbols until they are hard to read.
 - Use fixed four-corner cells: temperature at upper-left, the weather symbol at upper-right,
   ball availability at lower-left, and the aggregate attendee count at lower-right. Do not reserve
   an empty centre area. Keep personal names and individual availability out of the public table.
+- The unauthenticated calendar is a weather preview: show only temperature and weather. After
+  login, show attendance and ball information too; reveal individual names only after an
+  authenticated click on a slot.
 - Put time labels on the boundaries between rows rather than consuming a dedicated left column;
   include the final end-time label so the displayed range is closed.
+- The default window is the next seven New York calendar days, 12:00–20:00, at half-hour selection resolution; emphasize Saturday and Sunday only in their column headings.
+  It advances by one day at New York midnight. Store availability by window start, person, date,
+  and half-hour; a ball is a property of a person's individual selected half-hour, not a global
+  toggle.
+- Use colour primarily to show aggregate attendance density. Keep temperature and the provider's
+  weather condition legible as text/icon facts, not as a recommendation about whether an activity
+  should happen. In personal-selection mode, use the site's red daytime / green dark-mode accents
+  consistently for selected half-hours and retain visible dividers between those half-hours.
+- Put the two direct calendar actions immediately above it: choosing one's own availability and
+  publishing an activity time. Both enter clear persistent modes and support drag selection.
+  Choosing availability hides aggregate information and restores that person's previous choices;
+  publishing selects one or more contiguous slots, while exact start/end time and a description
+  are edited on the resulting activity card.
+- Confirmed activities are human decisions, not scheduler recommendations. Show them as larger
+  cards above the calendar; their details can be edited or cancelled by their creator, and expired
+  cards disappear automatically. A confirmed activity has its own RSVP records, separate from the
+  availability grid: each logged-in person can vote either “I can go” or “I can go + bring a ball.”
+  Show aggregate RSVP totals on the card; reveal voter names only in an authenticated, dismissible
+  popover opened from that card, marking ball carriers with a football icon. Comments are authenticated,
+  attributable to the logged-in name, editable/deletable by their author, and secondary to the
+  timetable.
+- Every transient popover in a shared activity tool must have an explicit close or cancel control and
+  also dismiss when the user clicks outside it. Opening a different time slot may replace the
+  currently open slot popover directly.
+- Anchor desktop slot popovers to their triggering cell and let them follow normal document
+  scrolling; if there is insufficient room on the right, align them to the cell's right edge.
+  Centre modal editors on mobile. Avoid duplicated close affordances: an explicit text action and
+  outside-click dismissal are sufficient.
 - Treat the weather provider as authoritative. Preserve its specific reported condition and map
-  it one-to-one to an appropriate line icon and conventional, restrained background colour; do
-  not collapse conditions or infer a sporting recommendation. Use warm pale yellow for clear
-  conditions, cool greys for cloud/fog, blue for rain, ice blue for snow, pale violet for freezing
-  rain, and muted blue-violet for thunderstorms. Keep richer weather data in the service layer
-  unless it is needed as an exceptional warning.
+  it one-to-one to an appropriate line icon; do not collapse conditions or infer a sporting
+  recommendation. Keep richer weather data in the service layer unless it is needed as an
+  exceptional warning.
 - The visible legend must use one consistent syntax and cover all four cell fields: weather,
   people, ball availability, and temperature.
 

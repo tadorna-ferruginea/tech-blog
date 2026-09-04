@@ -1,0 +1,5 @@
+# Copy this file to .dev.vars. Never commit the copied file.
+# Use a long, unique value for each secret.
+SCHEDULER_PASSWORD=replace-with-the-shared-password
+SESSION_SECRET=replace-with-at-least-32-random-characters
+ALLOWED_ORIGIN=http://localhost:4336

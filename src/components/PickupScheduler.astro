@@ -5,24 +5,25 @@ import type { Locale } from "@/i18n";
 interface Props { locale: Locale; embedded?: boolean }
 const { locale, embedded = false } = Astro.props;
 const isZh = locale === "zh";
+const pickupApiBase = import.meta.env.PUBLIC_PICKUP_API_BASE ?? (import.meta.env.DEV ? "http://localhost:8787" : "");
 const hours = ["12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM", "6 PM", "7 PM"];
 const copy = isZh
-	? { caption: "中央公园 · 纽约时间 · 示例数据", description: "未来七天，每天中午十二点到晚上八点。天气是背景；每格只放天气、气温、人数和球。", heading: "约球时间表", ball: "有球", people: "人", peopleLabel: "人数", temperature: "气温（°C）", weather: "天气" }
-	: { caption: "Central Park · New York time · sample data", description: "Seven rolling days, noon to 8pm. Weather is the background; each cell shows weather, temperature, people, and a ball.", heading: "Pickup schedule", ball: "ball available", people: "people", peopleLabel: "people", temperature: "temperature (°C)", weather: "weather" };
+	? { caption: "中央公园 · 纽约时间", description: "本周（周一至周日），每天中午十二点到晚上八点。天气、人数和球的状态均由服务同步。", heading: "约球时间表", ball: "有球", people: "人", peopleLabel: "人数", temperature: "气温", weather: "天气", colourBy: "背景：", temperatureBy: "温度", kelvinLord: "Lord Kelvin", access: "登录查看详情", logout: "退出登录", locked: "参与名单和评论已锁定", unlocked: "已登录", accessInstruction: "输入名字和口令后，点击任意时段查看参与者并参与评论。", passwordHeading: "登录", nameLabel: "名字", passwordLabel: "口令", remember: "在这台设备保持登录", continue: "登录", cancel: "取消", chooseTimes: "选择我的时间", decideTime: "发布活动时间", cancelPublish: "取消发布", participants: "参与者", empty: "还没有人标记这个时段。", close: "关闭", confirmed: "确定活动时间", confirmedBy: "发布人：", activity: "编辑活动", startTime: "开始时间", endTime: "结束时间", activityDescription: "活动介绍", activityPlaceholder: "例如：东草坪，带深色球衣。", saveActivity: "保存活动", noConfirmed: "还没有活动时间。", going: "我能去", bringingBall: "我能带球去 ⚽", peopleGoing: "人能去", ballsComing: "个球", comments: "评论", commentPlaceholder: "写一条评论…", publish: "发布", save: "保存修改", edit: "编辑", reply: "回复", replyingTo: "正在回复", cancelEdit: "取消修改", cancelReply: "取消回复", delete: "删除", noComments: "还没有评论。", demoNotice: "天气、可用时间和参与名单由服务提供。" }
+	: { caption: "Central Park · New York time", description: "This week, Monday to Sunday, noon to 8pm. Weather, attendance, and ball availability are synchronized by the service.", heading: "Pickup schedule", ball: "ball available", people: "people", peopleLabel: "people", temperature: "temperature", weather: "weather", colourBy: "Background:", temperatureBy: "Temperature", kelvinLord: "Lord Kelvin", access: "Log in for details", logout: "Log out", locked: "Participant lists and comments are locked", unlocked: "Logged in", accessInstruction: "Enter your name and passphrase, then select any time to see participants and join the conversation.", passwordHeading: "Log in", nameLabel: "Name", passwordLabel: "Passphrase", remember: "Keep me signed in on this device", continue: "Log in", cancel: "Cancel", chooseTimes: "Choose my times", decideTime: "Publish activity time", cancelPublish: "Cancel publishing", participants: "Participants", empty: "No one has marked this time yet.", close: "Close", confirmed: "Confirm meeting time", confirmedBy: "Published by ", activity: "Edit activity", startTime: "Start time", endTime: "End time", activityDescription: "Activity note", activityPlaceholder: "For example: East Meadow; bring dark shirts.", saveActivity: "Save activity", noConfirmed: "No activity time has been posted yet.", going: "I can join", bringingBall: "I can join with ⚽", peopleGoing: "going", ballsComing: "balls", comments: "Comments", commentPlaceholder: "Write a comment…", publish: "Post", save: "Save changes", edit: "Edit", reply: "Reply", replyingTo: "Replying to", cancelEdit: "Cancel edit", cancelReply: "Cancel reply", delete: "Delete", noComments: "No comments yet.", demoNotice: "Weather, availability, and participant details come from the service." };
 
 type Weather = "clear" | "mainly-clear" | "partly-cloudy" | "cloud" | "fog" | "drizzle" | "rain" | "heavy-rain" | "freezing-rain" | "snow" | "heavy-snow" | "thunderstorm" | "hail";
-type Day = { day: string; date: string; weather: Weather[]; temperatures: number[]; people: number[]; balls: boolean[] };
-const zhDays: Day[] = [
-	{ day: "周六", date: "08.29", weather: ["clear", "clear", "clear", "cloud", "cloud", "cloud", "cloud", "cloud"], temperatures: [22, 23, 24, 25, 25, 24, 23, 22], people: [2, 3, 4, 4, 4, 3, 2, 1], balls: [false, true, true, true, true, true, false, false] },
-	{ day: "周日", date: "08.30", weather: ["cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "cloud"], temperatures: [21, 22, 22, 23, 23, 22, 22, 21], people: [2, 3, 5, 5, 5, 4, 3, 2], balls: [false, true, true, true, true, true, true, false] },
-	{ day: "周一", date: "08.31", weather: ["cloud", "cloud", "drizzle", "drizzle", "rain", "rain", "cloud", "cloud"], temperatures: [20, 21, 21, 22, 22, 21, 21, 20], people: [0, 1, 1, 1, 1, 1, 1, 0], balls: [false, false, false, false, false, false, false, false] },
-	{ day: "周二", date: "09.01", weather: ["cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "clear", "clear"], temperatures: [20, 21, 22, 23, 24, 24, 23, 22], people: [1, 1, 2, 2, 2, 2, 1, 1], balls: [false, false, false, false, false, false, false, false] },
-	{ day: "周三", date: "09.02", weather: ["clear", "clear", "clear", "clear", "clear", "clear", "clear", "clear"], temperatures: [22, 23, 24, 25, 26, 26, 25, 23], people: [1, 2, 3, 3, 3, 3, 2, 1], balls: [false, true, true, true, true, true, false, false] },
-	{ day: "周四", date: "09.03", weather: ["clear", "clear", "clear", "clear", "cloud", "cloud", "cloud", "cloud"], temperatures: [23, 24, 25, 27, 27, 26, 24, 23], people: [1, 2, 3, 3, 3, 2, 2, 1], balls: [false, false, false, false, false, false, false, false] },
-	{ day: "周五", date: "09.04", weather: ["cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "cloud", "cloud"], temperatures: [21, 22, 23, 24, 24, 23, 22, 21], people: [0, 1, 2, 2, 2, 2, 1, 0], balls: [false, false, true, true, true, true, false, false] },
-];
-const enNames = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
-const days = zhDays.map((day, index) => ({ ...day, day: isZh ? day.day : enNames[index]! }));
+type Day = { day: string; date: string; weather: Weather[]; temperatures: (number | null)[]; people: number[]; balls: boolean[] };
+// This is an empty client shell, not a forecast. The Worker fills all dates and
+// weather values immediately after load, so an unavailable service never looks
+// like a real (but stale) week of weather.
+const days: Day[] = Array.from({ length: 7 }, () => ({
+	day: "—",
+	date: "—",
+	weather: Array<Weather>(8).fill("cloud"),
+	temperatures: Array<number | null>(8).fill(null),
+	people: Array<number>(8).fill(0),
+	balls: Array<boolean>(8).fill(false),
+}));
 const weatherIcons: Record<Weather, string> = {
 	clear: "mdi:weather-sunny", "mainly-clear": "mdi:weather-sunny", "partly-cloudy": "mdi:weather-partly-cloudy", cloud: "mdi:weather-cloudy", fog: "mdi:weather-fog",
 	drizzle: "mdi:weather-rainy", rain: "mdi:weather-rainy", "heavy-rain": "mdi:weather-pouring", "freezing-rain": "mdi:weather-snowy-rainy",
@@ -33,21 +34,66 @@ const weatherLabels = isZh
 	: { clear: "Clear sky", "mainly-clear": "Mainly clear", "partly-cloudy": "Partly cloudy", cloud: "Overcast", fog: "Fog", drizzle: "Drizzle", rain: "Rain", "heavy-rain": "Heavy rain", "freezing-rain": "Freezing rain", snow: "Snow", "heavy-snow": "Heavy snow", thunderstorm: "Thunderstorm", hail: "Hail" };
 ---
 
-<section class:list={{ scheduler: true, embedded }} aria-label={copy.heading}>
+<section
+	class:list={{ scheduler: true, embedded }}
+	aria-label={isZh ? "有时间踢⚽️吗？" : "Got time for ⚽️?"}
+	data-scheduler
+	data-api-base={pickupApiBase.replace(/\/$/, "")}
+	data-close={copy.close}
+	data-empty={copy.empty}
+	data-edit={copy.edit}
+	data-delete={copy.delete}
+	data-confirmed-by={copy.confirmedBy}
+	data-cancel={copy.cancel}
+	data-cancel-publish={copy.cancelPublish}
+	data-going={copy.going}
+	data-bringing-ball={copy.bringingBall}
+	data-people-going={copy.peopleGoing}
+	data-balls-coming={copy.ballsComing}
+	data-locked={copy.locked}
+	data-no-comments={copy.noComments}
+	data-reply={copy.reply}
+	data-replying-to={copy.replyingTo}
+	data-cancel-reply={copy.cancelReply}
+	data-cancel-edit={copy.cancelEdit}
+	data-participants={copy.participants}
+	data-publish={copy.publish}
+	data-save={copy.save}
+	data-unlocked={copy.unlocked}
+	data-colour-mode="attendance"
+	data-display-temperature-unit="celsius"
+	data-kelvin-lord={copy.kelvinLord}
+>
 	{
 		!embedded && (
 			<>
 				<p class="scheduler-caption">{copy.caption}</p>
-				<h1 class="title mb-4">{copy.heading}</h1>
-				<p class="prose reading-prose font-prose max-w-2xl">{copy.description}</p>
+				<div class="scheduler-title-row">
+					<h1 class="title">{isZh ? "有时间踢⚽️吗？" : "Got time for ⚽️?"}</h1>
+					<div class="scheduler-access">
+						<button class="scheduler-access-button" data-scheduler-access type="button">{isZh ? "有！" : "Yes!"}</button>
+						<button class="dialog-done" data-scheduler-logout hidden type="button">{copy.logout}</button>
+						<span class="scheduler-current-user" data-scheduler-current-user hidden></span>
+					</div>
+				</div>
 			</>
 		)
 	}
-
-	<div class="scheduler-scroll">
-		<div class="scheduler-grid">
+	<div class="scheduler-board">
+		<section class="scheduler-confirmed" data-confirmed-panel hidden>
+			<p class="scheduler-caption scheduler-section-title">{copy.confirmed}</p>
+			<ul class="confirmed-list" data-confirmed-list></ul>
+		</section>
+		<div class="scheduler-modes" data-scheduler-modes hidden>
+			<button class="scheduler-mode-button" data-mode="availability" type="button">{copy.chooseTimes}</button>
+			<button class="scheduler-mode-button" data-mode="decision" type="button">{copy.decideTime}</button>
+			<span class="scheduler-sunset" data-today-sunset hidden></span>
+			<label class="scheduler-ball-option" data-ball-option hidden><input data-can-bring-ball type="checkbox" /> ⚽ {isZh ? "我能带球" : "I can bring a ball"}</label>
+		</div>
+		<div class="scheduler-scroll">
+			<div class="scheduler-grid">
 			<div class="day-headings">
-				{days.map(({ day, date }) => <div class="day-heading"><strong>{day}</strong><span>{date}</span></div>)}
+				{days.map(({ day, date }, dayIndex) => <div class="day-heading" data-day-heading={dayIndex}><strong>{day}</strong><span>{date}</span></div>)}
 			</div>
 			{
 				hours.map((hour, hourIndex) => (
@@ -60,12 +106,29 @@ const weatherLabels = isZh
 								const people = day.people[hourIndex]!;
 								const ball = day.balls[hourIndex]!;
 								return (
-									<div class={`slot ${weather}`} aria-label={`${day.day} ${hour}: ${weatherLabels[weather]}, ${temperature}°C, ${people} ${copy.people}${ball ? `, ${copy.ball}` : ""}`}>
-										<span class="temperature">{temperature}°</span>
+									<button
+								aria-label={temperature === null ? `${day.day} ${hour}` : `${day.day} ${hour}: ${weatherLabels[weather]}, ${temperature}°C`}
+										class={`slot ${weather} people-${Math.min(people, 5)}`}
+										data-day={`${day.day} ${day.date}`}
+										data-day-index={days.indexOf(day)}
+										data-hour={hour}
+										data-hour-index={hourIndex}
+						data-ball={ball ? "true" : "false"}
+						data-temperature-c={temperature ?? ""}
+										data-people={people}
+										type="button"
+									>
+						<span class="temperature">{temperature === null ? "—" : `${temperature}°`}</span>
 										{ball && <span class="ball" aria-hidden="true">⚽</span>}
-										<Icon aria-hidden="true" class="weather-icon" name={weatherIcons[weather]} />
+										<span class="availability-quarters" aria-hidden="true">
+											{Array.from({ length: 2 }, (_, quarter) => <span class="availability-quarter" data-quarter={quarter}></span>)}
+										</span>
+						<span class="weather-icons" aria-hidden="true">
+							{Object.entries(weatherIcons).map(([condition, icon]) => <Icon class={`weather-icon weather-icon-${condition}`} name={icon} />)}
+							<Icon class="weather-icon weather-icon-cloud-kelvin" name="mdi:clouds" />
+						</span>
 										<strong class:list={{ empty: people === 0 }}>{people || "—"}</strong>
-									</div>
+									</button>
 								);
 							})
 						}
@@ -73,63 +136,1223 @@ const weatherLabels = isZh
 					</div>
 				))
 			}
+			</div>
+		</div>
+		<div class="scheduler-colour-controls" data-colour-controls hidden>
+			<span>{copy.colourBy}</span>
+			<span class="scheduler-option-buttons"><button class="scheduler-colour-button is-active" data-colour-mode="attendance" type="button">{copy.peopleLabel}</button><button class="scheduler-colour-button" data-colour-mode="weather" type="button">{copy.weather}</button></span>
 		</div>
 	</div>
 
 	<div class="scheduler-legend">
 		<span><Icon aria-hidden="true" name="mdi:weather-cloudy" /> {copy.weather}</span>
-		<span><strong>3</strong> {copy.peopleLabel}</span>
-		<span>⚽ {copy.ball}</span>
-		<span><strong>22°</strong> {copy.temperature}</span>
+		<span data-temperature-preview><strong>22°</strong> {copy.temperature} {isZh ? "（°C）" : "(°C)"}</span>
+		<span data-authenticated-legend hidden><strong>3</strong> {copy.peopleLabel}</span>
+		<span data-authenticated-legend hidden>⚽ {copy.ball}</span>
+		<span data-authenticated-legend hidden>{isZh ? "◀ :30 前离开" : "◀ leaves at :30"}</span>
+		<span data-authenticated-legend hidden>{isZh ? "▶ :30 开始加入" : "▶ joins at :30"}</span>
+		<span class="temperature-legend" data-temperature-controls hidden><strong>22°</strong> {copy.temperature}<span class="scheduler-option-buttons"><button class="scheduler-colour-button is-active" data-temperature-unit="celsius" type="button">°C</button><button class="scheduler-colour-button" data-temperature-unit="fahrenheit" type="button">°F</button><button class="scheduler-colour-button" data-temperature-unit="kelvin" hidden type="button">K</button></span></span>
+	</div>
+
+	<section class="scheduler-comments" data-comments-panel hidden>
+		<p class="scheduler-caption scheduler-section-title">{copy.comments}</p>
+		<ul class="comment-list" data-comment-list></ul>
+		<form class="comment-form" data-comment-form>
+			<p class="comment-replying" data-comment-replying hidden></p>
+			<textarea aria-label={copy.comments} data-comment-input placeholder={copy.commentPlaceholder} required></textarea>
+			<div class="comment-actions">
+				<button class="scheduler-access-button" data-comment-submit type="submit">{copy.publish}</button>
+				<button class="dialog-done" data-comment-cancel hidden type="button">{copy.cancelEdit}</button>
+			</div>
+		</form>
+	</section>
+
+	<div aria-modal="false" class="scheduler-popover" data-password-popover hidden role="dialog">
+		<form data-password-form>
+			<h2 class="title text-lg">{copy.passwordHeading}</h2>
+			<label class="password-label">
+				<span>{copy.nameLabel}</span>
+				<input autocomplete="name" data-name-input required type="text" />
+			</label>
+			<label class="password-label">
+				<span>{copy.passwordLabel}</span>
+				<input autocomplete="current-password" data-password-input required type="password" />
+			</label>
+			<label class="remember-label">
+				<input data-remember-input type="checkbox" />
+				<span>{copy.remember}</span>
+			</label>
+			<div class="password-actions">
+				<button class="scheduler-access-button" type="submit">{copy.continue}</button>
+				<button class="dialog-done" data-password-close type="button">{copy.cancel}</button>
+			</div>
+		</form>
+	</div>
+
+	<div aria-modal="false" class="scheduler-popover" data-participants-popover hidden role="dialog">
+			<p class="scheduler-caption" data-slot-context></p>
+			<h2 class="title text-lg" data-participants-heading>{copy.participants}</h2>
+			<ul class="participant-list" data-participant-list></ul>
+			<button class="dialog-done" data-popover-close type="button">{copy.close}</button>
+	</div>
+
+	<div aria-modal="false" class="scheduler-popover activity-editor" data-activity-editor hidden role="dialog">
+		<form data-activity-form>
+			<p class="scheduler-caption" data-activity-context></p>
+			<h2 class="title text-lg">{copy.activity}</h2>
+			<div class="activity-times">
+				<label><span>{copy.startTime}</span><input data-activity-start required step="900" type="time" /></label>
+				<label><span>{copy.endTime}</span><input data-activity-end required step="900" type="time" /></label>
+			</div>
+			<label class="activity-description"><span>{copy.activityDescription}</span><textarea data-activity-input placeholder={copy.activityPlaceholder}></textarea></label>
+			<div class="activity-editor-actions">
+				<button class="scheduler-access-button" type="submit">{copy.saveActivity}</button>
+				<button class="dialog-done" data-activity-close type="button">{copy.close}</button>
+			</div>
+		</form>
 	</div>
 </section>
+
+<script>
+	const weatherClasses = ["clear", "mainly-clear", "partly-cloudy", "cloud", "fog", "drizzle", "rain", "heavy-rain", "freezing-rain", "snow", "heavy-snow", "thunderstorm", "hail"];
+	const weatherFromWmoCode = (code: number) => {
+		if (code === 0) return "clear";
+		if (code === 1) return "mainly-clear";
+		if (code === 2) return "partly-cloudy";
+		if (code === 3) return "cloud";
+		if (code === 45 || code === 48) return "fog";
+		if ([51, 53, 55].includes(code)) return "drizzle";
+		if ([56, 57, 66, 67].includes(code)) return "freezing-rain";
+		if ([61, 63, 80, 81].includes(code)) return "rain";
+		if ([65, 82].includes(code)) return "heavy-rain";
+		if ([71, 73, 77, 85].includes(code)) return "snow";
+		if ([75, 86].includes(code)) return "heavy-snow";
+		if ([95, 96, 99].includes(code)) return "thunderstorm";
+		return "cloud";
+	};
+	const weatherDescription = (code: number, chinese: boolean) => {
+		const descriptions: Record<number, [string, string]> = {
+			0: ["晴", "Clear sky"], 1: ["大部晴朗", "Mainly clear"], 2: ["局部多云", "Partly cloudy"], 3: ["阴", "Overcast"],
+			45: ["雾", "Fog"], 48: ["雾凇", "Depositing rime fog"], 51: ["小毛毛雨", "Light drizzle"], 53: ["中等毛毛雨", "Moderate drizzle"], 55: ["强毛毛雨", "Dense drizzle"],
+			56: ["小冻毛毛雨", "Light freezing drizzle"], 57: ["强冻毛毛雨", "Dense freezing drizzle"], 61: ["小雨", "Slight rain"], 63: ["中雨", "Moderate rain"], 65: ["大雨", "Heavy rain"],
+			66: ["小冻雨", "Light freezing rain"], 67: ["强冻雨", "Heavy freezing rain"], 71: ["小雪", "Slight snow"], 73: ["中雪", "Moderate snow"], 75: ["大雪", "Heavy snow"],
+			77: ["雪粒", "Snow grains"], 80: ["小阵雨", "Slight rain showers"], 81: ["中阵雨", "Moderate rain showers"], 82: ["强阵雨", "Violent rain showers"],
+			85: ["小阵雪", "Slight snow showers"], 86: ["强阵雪", "Heavy snow showers"], 95: ["雷暴", "Thunderstorm"], 96: ["雷暴伴小冰雹", "Thunderstorm with slight hail"], 99: ["雷暴伴强冰雹", "Thunderstorm with heavy hail"],
+		};
+		return descriptions[code]?.[chinese ? 0 : 1] ?? (chinese ? "未知天气" : "Unknown weather");
+	};
+	document.querySelectorAll<HTMLElement>("[data-scheduler]").forEach((scheduler) => {
+		const accessButton = scheduler.querySelector<HTMLButtonElement>("[data-scheduler-access]")!;
+		const logoutButton = scheduler.querySelector<HTMLButtonElement>("[data-scheduler-logout]")!;
+		const currentUserLabel = scheduler.querySelector<HTMLElement>("[data-scheduler-current-user]")!;
+		const passwordPopover = scheduler.querySelector<HTMLElement>("[data-password-popover]")!;
+		const passwordForm = scheduler.querySelector<HTMLFormElement>("[data-password-form]")!;
+		const nameInput = scheduler.querySelector<HTMLInputElement>("[data-name-input]")!;
+		const passwordInput = scheduler.querySelector<HTMLInputElement>("[data-password-input]")!;
+		const rememberInput = scheduler.querySelector<HTMLInputElement>("[data-remember-input]")!;
+		const participantsPopover = scheduler.querySelector<HTMLElement>("[data-participants-popover]")!;
+		const slotContext = scheduler.querySelector<HTMLElement>("[data-slot-context]")!;
+		const participantsHeading = scheduler.querySelector<HTMLElement>("[data-participants-heading]")!;
+		const participantList = scheduler.querySelector<HTMLUListElement>("[data-participant-list]")!;
+		const commentsPanel = scheduler.querySelector<HTMLElement>("[data-comments-panel]")!;
+		const confirmedPanel = scheduler.querySelector<HTMLElement>("[data-confirmed-panel]")!;
+		const confirmedList = scheduler.querySelector<HTMLUListElement>("[data-confirmed-list]")!;
+		const activityEditor = scheduler.querySelector<HTMLElement>("[data-activity-editor]")!;
+		const activityForm = scheduler.querySelector<HTMLFormElement>("[data-activity-form]")!;
+		const activityContext = scheduler.querySelector<HTMLElement>("[data-activity-context]")!;
+		const activityStart = scheduler.querySelector<HTMLInputElement>("[data-activity-start]")!;
+		const activityEnd = scheduler.querySelector<HTMLInputElement>("[data-activity-end]")!;
+		const activityInput = scheduler.querySelector<HTMLTextAreaElement>("[data-activity-input]")!;
+		const modeControls = scheduler.querySelector<HTMLElement>("[data-scheduler-modes]")!;
+		const colourControls = scheduler.querySelector<HTMLElement>("[data-colour-controls]")!;
+		const colourButtons = scheduler.querySelectorAll<HTMLButtonElement>("[data-colour-mode]");
+		const temperatureControls = scheduler.querySelector<HTMLElement>("[data-temperature-controls]")!;
+		const temperaturePreview = scheduler.querySelector<HTMLElement>("[data-temperature-preview]")!;
+		const authenticatedLegend = scheduler.querySelectorAll<HTMLElement>("[data-authenticated-legend]");
+		const temperatureButtons = scheduler.querySelectorAll<HTMLButtonElement>("[data-temperature-unit]");
+		const kelvinButton = scheduler.querySelector<HTMLButtonElement>('[data-temperature-unit="kelvin"]')!;
+		const modeButtons = scheduler.querySelectorAll<HTMLButtonElement>("[data-mode]");
+		const todaySunset = scheduler.querySelector<HTMLElement>("[data-today-sunset]")!;
+		const ballOption = scheduler.querySelector<HTMLElement>("[data-ball-option]")!;
+		const canBringBallInput = scheduler.querySelector<HTMLInputElement>("[data-can-bring-ball]")!;
+		const commentList = scheduler.querySelector<HTMLUListElement>("[data-comment-list]")!;
+		const commentForm = scheduler.querySelector<HTMLFormElement>("[data-comment-form]")!;
+		const commentInput = scheduler.querySelector<HTMLTextAreaElement>("[data-comment-input]")!;
+		const commentSubmit = scheduler.querySelector<HTMLButtonElement>("[data-comment-submit]")!;
+		const commentCancel = scheduler.querySelector<HTMLButtonElement>("[data-comment-cancel]")!;
+		const commentReplying = scheduler.querySelector<HTMLElement>("[data-comment-replying]")!;
+		const slots = scheduler.querySelectorAll<HTMLButtonElement>(".slot");
+		const isChinese = document.documentElement.lang.startsWith("zh");
+		let unlocked = false;
+		let currentName = "";
+		let selectedSlot: HTMLButtonElement | undefined;
+		let openSlot: HTMLButtonElement | undefined;
+		let popoverAnchor: HTMLElement | undefined;
+		let activityAnchor: HTMLElement | undefined;
+		type ConfirmedSlot = { key: string; confirmedBy: string; description: string; slot: HTMLButtonElement; date: string; hour: number; start: string; end: string; rsvps: Record<string, boolean> };
+		let editingActivity: ConfirmedSlot | undefined;
+		let mode: "view" | "availability" | "decision" = "view";
+		type Comment = { id: string; parentId?: string | null; replyToId?: string | null; replyToAuthor?: string | null; replyToBody?: string | null; author: string; body: string; createdAt: string };
+		let editingCommentId: string | undefined;
+		let replyingToId: string | undefined;
+		let replyingUnderId: string | undefined;
+		const confirmedSlots: ConfirmedSlot[] = [];
+		let comments: Comment[] = [];
+		const myAvailability = new Set<string>();
+		const ballAvailability = new Set<string>();
+		let canBringBall = false;
+		let availabilityDrag: { pointerId: number; canBringBall: boolean; touched: Set<string> } | undefined;
+		let activityDrag: { pointerId: number; start: HTMLButtonElement; end: HTMLButtonElement } | undefined;
+		let ignoreAvailabilityClick = false;
+		let ignoreActivityClick = false;
+		let currentWeekStart = "";
+		let temperatureSwitches = 0;
+		let previousTemperatureUnit = "celsius";
+		let kelvinUnlocked = false;
+		// A front-end-only Easter egg: Lord Kelvin's two clouds obscure clear skies.
+		const kelvinIsAvailable = (slot: HTMLButtonElement) => slot.classList.contains("clear") || slot.classList.contains("mainly-clear");
+		const applyKelvinVisuals = () => slots.forEach((slot) => {
+			slot.classList.toggle("kelvin-clouds", kelvinIsAvailable(slot));
+			if (!kelvinIsAvailable(slot)) return;
+			const people = Number(slot.dataset.people ?? 0) + 1;
+			const count = slot.querySelector("strong")!;
+			count.textContent = String(people);
+			count.classList.remove("empty");
+			slot.classList.remove("people-0", "people-1", "people-2", "people-3", "people-4", "people-5");
+			slot.classList.add(`people-${Math.min(people, 5)}`);
+			if (!slot.querySelector(".ball")) {
+				const ball = document.createElement("span");
+				ball.className = "ball";
+				ball.setAttribute("aria-hidden", "true");
+				ball.textContent = "⚽";
+				slot.append(ball);
+			}
+		});
+		const availabilityKey = (slot: HTMLButtonElement, quarter: number) => `${slot.dataset.dayIndex}:${slot.dataset.hourIndex}:${quarter}`;
+		const dateForSlot = (slot: HTMLButtonElement, weekStart = currentWeekStart) => {
+			const date = new Date(`${weekStart}T12:00:00Z`);
+			date.setUTCDate(date.getUTCDate() + Number(slot.dataset.dayIndex));
+			return date.toISOString().slice(0, 10);
+		};
+		const minuteForSlot = (slot: HTMLButtonElement, halfHour = 0) => (Number(slot.dataset.hourIndex) + 12) * 60 + halfHour * 30;
+		const renderTemperatures = () => {
+			const fahrenheit = scheduler.dataset.displayTemperatureUnit === "fahrenheit";
+			slots.forEach((slot) => {
+				const celsius = Number(slot.dataset.temperatureC);
+				if (!Number.isFinite(celsius)) return;
+					const kelvin = scheduler.dataset.displayTemperatureUnit === "kelvin";
+				slot.querySelector<HTMLElement>(".temperature")!.textContent = kelvin
+					? `${Math.round(celsius + 273.15)} K`
+					: `${fahrenheit ? Math.round(celsius * 9 / 5 + 32) : celsius}°`;
+			});
+			if (kelvinUnlocked) applyKelvinVisuals();
+		};
+		const applyAttendanceSummary = (summary: { date: string; startMinute: number; people: number; balls: number }[]) => {
+			const bySlot = new Map(summary.map((item) => [`${item.date}:${item.startMinute}`, item]));
+			slots.forEach((slot) => {
+				const first = bySlot.get(`${slot.dataset.isoDate}:${minuteForSlot(slot)}`);
+				const second = bySlot.get(`${slot.dataset.isoDate}:${minuteForSlot(slot, 1)}`);
+				// An hourly cell represents the best-attended of its two half-hours.
+				// Adding them double-counts people who are free for both halves.
+				const people = Math.max(first?.people ?? 0, second?.people ?? 0);
+				const balls = Math.max(first?.balls ?? 0, second?.balls ?? 0);
+				slot.dataset.people = String(people);
+				slot.dataset.ball = balls > 0 ? "true" : "false";
+				slot.querySelector("strong")!.textContent = people || "—";
+				slot.querySelector("strong")!.classList.toggle("empty", people === 0);
+				slot.querySelector(".ball")?.remove();
+				if (balls > 0) {
+					const ball = document.createElement("span");
+					ball.className = "ball";
+					ball.setAttribute("aria-hidden", "true");
+					ball.textContent = "⚽";
+					slot.append(ball);
+				}
+				slot.classList.remove("people-0", "people-1", "people-2", "people-3", "people-4", "people-5");
+				slot.classList.add(`people-${Math.min(people, 5)}`);
+			});
+		};
+		const renderAvailability = () => {
+			slots.forEach((slot) => {
+				slot.querySelectorAll<HTMLElement>("[data-quarter]").forEach((quarter) => {
+					const selected = myAvailability.has(availabilityKey(slot, Number(quarter.dataset.quarter)));
+					quarter.classList.toggle("is-selected", selected);
+					quarter.classList.toggle("can-bring-ball", selected && ballAvailability.has(availabilityKey(slot, Number(quarter.dataset.quarter))));
+				});
+				slot.classList.toggle("is-full-availability", [0, 1].every((halfHour) => myAvailability.has(availabilityKey(slot, halfHour))));
+			});
+		};
+		const loadAvailability = async () => {
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase) return;
+			try {
+				const response = await fetch(`${apiBase}/api/pickup/v1/schedule`, { credentials: "include" });
+				if (!response.ok) throw new Error("Schedule request failed");
+				const schedule = await response.json() as { authenticated?: boolean; me?: string; weekStart?: string; summary?: { date: string; startMinute: number; people: number; balls: number }[]; mine?: { date: string; startMinute: number; bringsBall: number }[] };
+				if (!schedule.authenticated || !schedule.weekStart || !schedule.me) return;
+				currentName = schedule.me;
+				currentWeekStart = schedule.weekStart;
+				slots.forEach((slot) => { slot.dataset.isoDate = dateForSlot(slot); });
+				applyAttendanceSummary(schedule.summary ?? []);
+				myAvailability.clear();
+				ballAvailability.clear();
+				(schedule.mine ?? []).forEach((entry) => {
+					const slot = [...slots].find((candidate) => candidate.dataset.isoDate === entry.date && minuteForSlot(candidate) === entry.startMinute - (entry.startMinute % 60));
+					if (!slot) return;
+					const halfHour = entry.startMinute % 60 === 30 ? 1 : 0;
+					const key = availabilityKey(slot, halfHour);
+					myAvailability.add(key);
+					if (entry.bringsBall) ballAvailability.add(key);
+				});
+				renderAvailability();
+			} catch {
+				// The UI remains locked to its last server-confirmed state on a failed request.
+			}
+		};
+		const saveAvailability = async () => {
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase || !currentWeekStart) return;
+			const entries = [...slots].flatMap((slot) => [0, 1].flatMap((halfHour) => {
+				const key = availabilityKey(slot, halfHour);
+				return myAvailability.has(key) ? [{ date: slot.dataset.isoDate, startMinute: minuteForSlot(slot, halfHour), bringsBall: ballAvailability.has(key) }] : [];
+			}));
+			try {
+				const response = await fetch(`${apiBase}/api/pickup/v1/availability`, {
+					method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ weekStart: currentWeekStart, entries }),
+				});
+				if (!response.ok) throw new Error("Availability save failed");
+				await loadAvailability();
+			} catch {
+				await loadAvailability();
+			}
+		};
+		const availabilityAtPoint = (clientX: number, clientY: number) => {
+			const target = document.elementFromPoint(clientX, clientY);
+			const slot = target instanceof Element ? target.closest<HTMLButtonElement>(".slot") : null;
+			if (!slot || !scheduler.contains(slot)) return undefined;
+			const bounds = slot.getBoundingClientRect();
+			const halfHour = Math.min(1, Math.max(0, Math.floor(((clientY - bounds.top) / bounds.height) * 2)));
+			return { slot, halfHour };
+		};
+		const updateAvailability = (slot: HTMLButtonElement, halfHour: number, bringBall: boolean, touched?: Set<string>) => {
+			const key = availabilityKey(slot, halfHour);
+			if (touched?.has(key)) return;
+			touched?.add(key);
+			const isAvailable = myAvailability.has(key);
+			const hasBall = ballAvailability.has(key);
+			if (bringBall && (!isAvailable || !hasBall)) {
+				myAvailability.add(key);
+				ballAvailability.add(key);
+			} else if (!bringBall && !isAvailable) {
+				myAvailability.add(key);
+				ballAvailability.delete(key);
+			} else {
+				myAvailability.delete(key);
+				ballAvailability.delete(key);
+			}
+			renderAvailability();
+		};
+		const activityRange = (start: HTMLButtonElement, end: HTMLButtonElement) => {
+			if (start.dataset.dayIndex !== end.dataset.dayIndex) return [start];
+			const from = Math.min(Number(start.dataset.hourIndex), Number(end.dataset.hourIndex));
+			const to = Math.max(Number(start.dataset.hourIndex), Number(end.dataset.hourIndex));
+			return [...slots].filter((slot) => slot.dataset.dayIndex === start.dataset.dayIndex && Number(slot.dataset.hourIndex) >= from && Number(slot.dataset.hourIndex) <= to);
+		};
+		const renderActivityRange = (start?: HTMLButtonElement, end?: HTMLButtonElement) => {
+			const selected = start && end ? new Set(activityRange(start, end)) : new Set<HTMLButtonElement>();
+			slots.forEach((slot) => slot.classList.toggle("is-activity-range", selected.has(slot)));
+		};
+		const loadConfirmed = async () => {
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase) return;
+			try {
+				const response = await fetch(`${apiBase}/api/pickup/v1/schedule`, { credentials: "include" });
+				if (!response.ok) throw new Error("Activity request failed");
+				const schedule = await response.json() as { authenticated?: boolean; activities?: { id: string; date: string; startMinute: number; endMinute: number; description: string; createdBy: string }[] };
+				if (!schedule.authenticated) return;
+				const activities = await Promise.all((schedule.activities ?? []).map(async (activity) => {
+					const slot = [...slots].find((candidate) => candidate.dataset.isoDate === activity.date && Math.floor(minuteForSlot(candidate) / 60) === Math.floor(activity.startMinute / 60));
+					if (!slot) return undefined;
+					const rsvpResponse = await fetch(`${apiBase}/api/pickup/v1/activities/${encodeURIComponent(activity.id)}/rsvp`, { credentials: "include" });
+					if (!rsvpResponse.ok) throw new Error("RSVP request failed");
+					const rsvpData = await rsvpResponse.json() as { people?: { name: string; bringsBall: number | boolean }[] };
+					const format = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+					return { key: activity.id, confirmedBy: activity.createdBy, description: activity.description, slot, date: activity.date, hour: Math.floor(activity.startMinute / 60), start: format(activity.startMinute), end: format(activity.endMinute), rsvps: Object.fromEntries((rsvpData.people ?? []).map((person) => [person.name, Boolean(person.bringsBall)])) };
+				}));
+				confirmedSlots.splice(0, confirmedSlots.length, ...activities.filter((activity): activity is ConfirmedSlot => Boolean(activity)));
+				renderConfirmed();
+			} catch { /* retain the last server-confirmed cards */ }
+		};
+
+		const resetCommentEditor = () => {
+			editingCommentId = undefined;
+			replyingToId = undefined;
+			replyingUnderId = undefined;
+			commentInput.value = "";
+			commentSubmit.textContent = scheduler.dataset.publish ?? "Post";
+			commentCancel.hidden = true;
+			commentCancel.textContent = scheduler.dataset.cancelEdit ?? "Cancel edit";
+			commentReplying.hidden = true;
+			commentReplying.textContent = "";
+		};
+
+		const setMode = (nextMode: "view" | "availability" | "decision") => {
+			mode = mode === nextMode ? "view" : nextMode;
+			scheduler.dataset.mode = mode;
+			modeButtons.forEach((button) => {
+				const active = button.dataset.mode === mode;
+				button.classList.toggle("is-active", active);
+				button.setAttribute("aria-pressed", String(active));
+			});
+			ballOption.hidden = mode !== "availability";
+			if (mode === "availability") renderAvailability();
+			if (mode !== "decision") closeParticipants();
+			renderConfirmed();
+		};
+
+		const addKelvinComment = () => {
+			if (!kelvinUnlocked || comments.some((comment) => comment.id === "kelvin-easter-egg")) return;
+			comments.unshift({ id: "kelvin-easter-egg", author: scheduler.dataset.kelvinLord ?? "Lord Kelvin", body: "The beauty and clearness of the New York summer, which asserts heat and light to be modes of motion, is at present obscured by two clouds …", createdAt: new Date().toISOString() });
+		};
+		const loadComments = async () => {
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase || !currentWeekStart) return;
+			try {
+				const response = await fetch(`${apiBase}/api/pickup/v1/comments?week=${encodeURIComponent(currentWeekStart)}`, { credentials: "include" });
+				if (!response.ok) throw new Error("Comments request failed");
+				const result = await response.json() as { comments?: Comment[] };
+				comments = result.comments ?? [];
+				addKelvinComment();
+				renderComments();
+			} catch { /* retain the last server-confirmed comments */ }
+		};
+		const renderComments = () => {
+			commentList.replaceChildren();
+			if (comments.length === 0) {
+				const empty = document.createElement("li");
+				empty.className = "comment-empty";
+				empty.textContent = scheduler.dataset.noComments ?? "No comments yet.";
+				commentList.append(empty);
+				return;
+			}
+			const byParent = new Map<string, Comment[]>();
+			const roots = comments.filter((comment) => !comment.parentId);
+			comments.filter((comment) => comment.parentId).forEach((comment) => {
+				const replies = byParent.get(comment.parentId!) ?? [];
+				replies.push(comment);
+				byParent.set(comment.parentId!, replies);
+			});
+			const renderOne = (comment: Comment, isReply = false) => {
+				const item = document.createElement("li");
+				item.className = isReply ? "comment comment-reply" : "comment";
+				const author = document.createElement("strong");
+				author.textContent = comment.author;
+				const timestamp = document.createElement("time");
+				timestamp.className = "comment-timestamp";
+				timestamp.dateTime = comment.createdAt;
+				timestamp.textContent = new Intl.DateTimeFormat(isChinese ? "zh-CN" : "en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(comment.createdAt));
+				const meta = document.createElement("div");
+				meta.className = "comment-meta";
+				meta.append(author, timestamp);
+				item.append(meta);
+				if (isReply && comment.replyToId && comment.replyToId !== comment.parentId && comment.replyToAuthor && comment.replyToBody) {
+					const mention = document.createElement("span");
+					mention.className = "comment-mention";
+					mention.textContent = `@${comment.replyToAuthor} ${comment.replyToBody}`;
+					item.append(mention);
+				}
+				const body = document.createElement("p");
+				body.append(document.createTextNode(comment.body));
+				item.append(body);
+				const controls = document.createElement("div");
+				controls.className = "comment-controls";
+				if (comment.id !== "kelvin-easter-egg") {
+					const reply = document.createElement("button");
+					reply.type = "button";
+					reply.textContent = scheduler.dataset.reply ?? "Reply";
+					reply.addEventListener("click", () => {
+						editingCommentId = undefined;
+						replyingToId = comment.id;
+						replyingUnderId = comment.parentId ?? comment.id;
+						commentInput.value = "";
+						commentSubmit.textContent = scheduler.dataset.reply ?? "Reply";
+						commentCancel.textContent = scheduler.dataset.cancelReply ?? "Cancel reply";
+						commentCancel.hidden = false;
+						commentReplying.textContent = `${scheduler.dataset.replyingTo ?? "Replying to"} ${comment.author}`;
+						commentReplying.hidden = false;
+						commentInput.focus();
+					});
+					controls.append(reply);
+				}
+				if (comment.author === currentName && comment.id !== "kelvin-easter-egg") {
+					const edit = document.createElement("button");
+					edit.type = "button";
+					edit.textContent = scheduler.dataset.edit ?? "Edit";
+					edit.addEventListener("click", () => {
+						editingCommentId = comment.id;
+						replyingToId = undefined;
+						replyingUnderId = undefined;
+						commentInput.value = comment.body;
+						commentSubmit.textContent = scheduler.dataset.save ?? "Save changes";
+						commentCancel.textContent = scheduler.dataset.cancelEdit ?? "Cancel edit";
+						commentCancel.hidden = false;
+						commentInput.focus();
+					});
+					const remove = document.createElement("button");
+					remove.type = "button";
+					remove.textContent = scheduler.dataset.delete ?? "Delete";
+					remove.addEventListener("click", async () => {
+						const apiBase = scheduler.dataset.apiBase;
+						if (!apiBase) return;
+						const response = await fetch(`${apiBase}/api/pickup/v1/comments/${encodeURIComponent(comment.id)}`, { method: "DELETE", credentials: "include" });
+						if (!response.ok) return;
+						if (editingCommentId === comment.id || replyingToId === comment.id) resetCommentEditor();
+						await loadComments();
+					});
+					controls.append(edit, remove);
+				}
+				if (controls.childElementCount) item.append(controls);
+				return item;
+			};
+			roots.sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt)).forEach((comment) => {
+				commentList.append(renderOne(comment));
+				(byParent.get(comment.id) ?? []).sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt)).forEach((reply) => commentList.append(renderOne(reply, true)));
+			});
+		};
+
+		const closeActivityEditor = () => {
+			activityEditor.hidden = true;
+			editingActivity = undefined;
+			activityAnchor = undefined;
+		};
+
+		const openActivityEditor = (activity: ConfirmedSlot, anchor: HTMLElement) => {
+			editingActivity = activity;
+			activityAnchor = anchor;
+			activityContext.textContent = activity.slot.dataset.day ?? "";
+			activityStart.value = activity.start;
+			activityEnd.value = activity.end;
+			activityInput.value = activity.description;
+			activityEditor.hidden = false;
+			positionPopover(activityEditor, anchor);
+		};
+
+		const renderConfirmed = () => {
+			confirmedList.replaceChildren();
+			const activeConfirmed = confirmedSlots.filter((confirmed) => {
+				if (!confirmed.date) return true;
+				const endsAt = new Date(`${confirmed.date}T${confirmed.end}:00`).getTime();
+				return endsAt > Date.now();
+			});
+			if (activeConfirmed.length !== confirmedSlots.length) {
+				confirmedSlots.splice(0, confirmedSlots.length, ...activeConfirmed);
+			}
+			if (activeConfirmed.length === 0) {
+				const empty = document.createElement("li");
+				empty.className = "confirmed-empty";
+				empty.textContent = scheduler.dataset.noConfirmed ?? "No time has been confirmed yet.";
+				confirmedList.append(empty);
+				return;
+			}
+			activeConfirmed.forEach((confirmed) => {
+				const item = document.createElement("li");
+				item.className = "confirmed-card";
+				const card = document.createElement("button");
+				card.type = "button";
+				card.className = "confirmed-card-main";
+				const label = document.createElement("strong");
+				label.textContent = `${confirmed.slot.dataset.day} · ${confirmed.start}–${confirmed.end}`;
+				const by = document.createElement("span");
+				by.textContent = `${scheduler.dataset.confirmedBy ?? "Confirmed by "}${confirmed.confirmedBy}`;
+				card.append(label, by);
+				if (confirmed.description) {
+					const description = document.createElement("p");
+					description.textContent = confirmed.description;
+					card.append(description);
+				}
+				const rsvps = Object.values(confirmed.rsvps);
+				const status = document.createElement("span");
+				status.className = "confirmed-rsvp-summary";
+				status.textContent = `${rsvps.length} ${scheduler.dataset.peopleGoing ?? "going"}${rsvps.some(Boolean) ? " · ⚽" : ""}`;
+				card.append(status);
+				card.addEventListener("click", () => {
+					if (mode === "decision" && confirmed.confirmedBy === currentName) openActivityEditor(confirmed, card);
+					else showActivityParticipants(confirmed, card);
+				});
+				item.append(card);
+				if (mode !== "decision") {
+					const choices = document.createElement("div");
+					choices.className = "confirmed-rsvp-actions";
+					const currentVote = confirmed.rsvps[currentName];
+					item.classList.toggle("has-my-rsvp", currentVote !== undefined);
+					const vote = (bringsBall: boolean, labelText: string) => {
+						const button = document.createElement("button");
+						button.type = "button";
+						button.className = "confirmed-rsvp-button";
+						button.textContent = labelText;
+						button.addEventListener("click", async () => {
+							const apiBase = scheduler.dataset.apiBase;
+							if (!apiBase) return;
+							const response = await fetch(`${apiBase}/api/pickup/v1/activities/${encodeURIComponent(confirmed.key)}/rsvp`, { method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bringsBall }) });
+							if (response.ok) await loadConfirmed();
+						});
+						return button;
+					};
+					if (currentVote === undefined) choices.append(vote(false, scheduler.dataset.going ?? "I can join"), vote(true, scheduler.dataset.bringingBall ?? "I can join with ⚽"));
+					else {
+						choices.classList.add("is-cancel");
+						const cancel = document.createElement("button");
+						cancel.type = "button";
+						cancel.className = `confirmed-rsvp-button is-active${isChinese ? " is-chinese" : ""}`;
+						cancel.textContent = scheduler.dataset.cancel ?? "Cancel";
+						cancel.addEventListener("click", async () => {
+							const apiBase = scheduler.dataset.apiBase;
+							if (!apiBase) return;
+							const response = await fetch(`${apiBase}/api/pickup/v1/activities/${encodeURIComponent(confirmed.key)}/rsvp`, { method: "DELETE", credentials: "include" });
+							if (response.ok) await loadConfirmed();
+						});
+						choices.append(cancel);
+					}
+					item.append(choices);
+				}
+				if (mode === "decision" && confirmed.confirmedBy === currentName) {
+					const cancel = document.createElement("button");
+					cancel.type = "button";
+					cancel.className = "confirmed-cancel";
+					cancel.textContent = scheduler.dataset.cancelPublish ?? "Cancel publishing";
+					cancel.addEventListener("click", async () => {
+						const apiBase = scheduler.dataset.apiBase;
+						if (!apiBase) return;
+						const response = await fetch(`${apiBase}/api/pickup/v1/activities/${encodeURIComponent(confirmed.key)}`, { method: "DELETE", credentials: "include" });
+						if (response.ok) await loadConfirmed();
+					});
+					item.append(cancel);
+				}
+				confirmedList.append(item);
+			});
+		};
+
+		const unlock = async (name: string, rememberSession: boolean) => {
+			unlocked = true;
+			currentName = name;
+			scheduler.classList.add("is-unlocked");
+			accessButton.hidden = true;
+			logoutButton.hidden = false;
+			currentUserLabel.hidden = false;
+			currentUserLabel.textContent = isChinese ? `当前登录：${name}` : `Signed in as ${name}`;
+			confirmedPanel.hidden = false;
+			modeControls.hidden = false;
+			colourControls.hidden = false;
+			temperatureControls.hidden = false;
+			temperaturePreview.hidden = true;
+			authenticatedLegend.forEach((item) => item.hidden = false);
+			commentsPanel.hidden = false;
+			await loadAvailability();
+			await loadComments();
+			await loadConfirmed();
+			renderConfirmed();
+		};
+
+		const refreshWeather = async () => {
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase) return;
+			try {
+				const response = await fetch(`${apiBase}/api/pickup/v1/schedule`, { credentials: "include" });
+				if (!response.ok) throw new Error("Weather request failed");
+				const schedule = await response.json() as { weekStart?: string; weather?: { date: string; hour: number; temperatureC: number; weatherCode: number }[]; sunset?: string | null; authenticated?: boolean; me?: string; summary?: { date: string; startMinute: number; people: number; balls: number }[] };
+				if (!schedule.weekStart || !schedule.weather) throw new Error("Weather response was incomplete");
+				currentWeekStart = schedule.weekStart;
+				const monday = new Date(`${schedule.weekStart}T12:00:00Z`);
+				const dates = Array.from({ length: 7 }, (_, index) => {
+					const date = new Date(monday);
+					date.setUTCDate(monday.getUTCDate() + index);
+					return date.toISOString().slice(0, 10);
+				});
+				if (schedule.authenticated) applyAttendanceSummary(schedule.summary ?? []);
+				if (schedule.authenticated && schedule.me && !unlocked) await unlock(schedule.me, false);
+				const weatherByHour = new Map(schedule.weather.map((item) => [`${item.date}:${item.hour}`, item]));
+				if (schedule.sunset) {
+					const [hours, minutes] = schedule.sunset.split(":").map(Number);
+					const englishSunset = hours === 0 ? `12:${String(minutes).padStart(2, "0")} AM` : hours < 12 ? `${hours}:${String(minutes).padStart(2, "0")} AM` : hours === 12 ? `12:${String(minutes).padStart(2, "0")} PM` : `${hours - 12}:${String(minutes).padStart(2, "0")} PM`;
+					todaySunset.textContent = isChinese ? `🌇 本日日落时间：${schedule.sunset}` : `🌇 Today’s sunset: ${englishSunset}`;
+					todaySunset.hidden = false;
+				}
+				const weekdayFormatter = new Intl.DateTimeFormat(isChinese ? "zh-CN" : "en-US", { weekday: "short", timeZone: "America/New_York" });
+				scheduler.querySelectorAll<HTMLElement>("[data-day-heading]").forEach((heading, dayIndex) => {
+					const date = dates[dayIndex];
+					if (!date) return;
+					heading.querySelector("strong")!.textContent = weekdayFormatter.format(new Date(`${date}T16:00:00Z`));
+					heading.querySelector("span")!.textContent = date.slice(5).replace("-", ".");
+					heading.classList.toggle("is-weekend", [0, 6].includes(new Date(`${date}T16:00:00Z`).getUTCDay()));
+				});
+				slots.forEach((slot) => {
+					const date = dates[Number(slot.dataset.dayIndex)];
+					const hour = Number(slot.dataset.hourIndex) + 12;
+					if (!date) return;
+					const forecast = weatherByHour.get(`${date}:${hour}`);
+					if (!forecast) return;
+					const temperature = forecast.temperatureC;
+					const code = forecast.weatherCode;
+					const weather = weatherFromWmoCode(code);
+					const description = weatherDescription(code, isChinese);
+					const day = weekdayFormatter.format(new Date(`${date}T16:00:00Z`));
+					const hourLabel = slot.dataset.hour ?? "";
+					const people = Number(slot.dataset.people ?? 0);
+					slot.classList.remove(...weatherClasses);
+					slot.classList.add(weather);
+					slot.dataset.day = `${day} ${date.slice(5).replace("-", ".")}`;
+					slot.dataset.isoDate = date;
+					slot.dataset.temperatureC = String(temperature);
+					slot.querySelector<HTMLElement>(".temperature")!.textContent = `${temperature}°`;
+					slot.setAttribute("title", description);
+					slot.setAttribute("aria-label", `${day} ${hourLabel}: ${description}, ${temperature}°C${unlocked ? `, ${people} ${isChinese ? "人" : "people"}` : ""}`);
+				});
+				renderTemperatures();
+				loadConfirmed();
+				if (unlocked) renderConfirmed();
+			} catch {
+				// Keep the neutral shell instead of inventing a weather forecast.
+				scheduler.dataset.weatherState = "unavailable";
+			}
+		};
+
+		void refreshWeather();
+
+		const closeParticipants = () => {
+			participantsPopover.hidden = true;
+			openSlot?.setAttribute("aria-expanded", "false");
+			openSlot = undefined;
+			popoverAnchor = undefined;
+		};
+
+		const positionPopover = (popover: HTMLElement, anchor: HTMLElement) => {
+			const anchorBounds = anchor.getBoundingClientRect();
+			const popoverWidth = popover.offsetWidth;
+			const viewportRight = window.innerWidth - 12;
+			const left = anchorBounds.left + popoverWidth <= viewportRight
+				? anchorBounds.left
+				: Math.max(12, anchorBounds.right - popoverWidth);
+			popover.style.left = `${Math.round(left)}px`;
+			popover.style.top = `${Math.round(anchorBounds.top)}px`;
+		};
+
+		const showParticipants = async (slot: HTMLButtonElement, anchor: HTMLElement = slot) => {
+			if (openSlot === slot) {
+				closeParticipants();
+				return;
+			}
+
+			closeParticipants();
+			const day = slot.dataset.day ?? "";
+			const hour = slot.dataset.hour ?? "";
+			slotContext.textContent = `${day} · ${hour}`;
+			participantsHeading.textContent = scheduler.dataset.participants ?? "Participants";
+			participantList.replaceChildren();
+
+			participantsPopover.hidden = false;
+			openSlot = slot;
+			popoverAnchor = anchor;
+			slot.setAttribute("aria-expanded", "true");
+			positionPopover(participantsPopover, anchor);
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase || !currentWeekStart || !slot.dataset.isoDate) return;
+			try {
+				const results = await Promise.all([0, 1].map(async (halfHour) => {
+					const url = new URL(`${apiBase}/api/pickup/v1/participants`);
+					url.searchParams.set("week", currentWeekStart);
+					url.searchParams.set("date", slot.dataset.isoDate!);
+					url.searchParams.set("startMinute", String(minuteForSlot(slot, halfHour)));
+					const response = await fetch(url, { credentials: "include" });
+					if (!response.ok) throw new Error("Participant request failed");
+					return response.json() as Promise<{ people?: { name: string; bringsBall: number | boolean }[] }>;
+				}));
+				const halfHourPeople = results.map((result) => new Map((result.people ?? []).map((person) => [person.name, Boolean(person.bringsBall)])));
+				if (kelvinUnlocked && kelvinIsAvailable(slot)) halfHourPeople.forEach((people) => people.set(scheduler.dataset.kelvinLord ?? "Lord Kelvin", true));
+				const people = new Map<string, boolean>();
+				halfHourPeople.flatMap((group) => [...group]).forEach(([name, bringsBall]) => people.set(name, Boolean(people.get(name)) || bringsBall));
+				if (openSlot !== slot) return;
+				participantList.replaceChildren();
+				if (people.size === 0) {
+					const empty = document.createElement("li");
+					empty.className = "participant-empty";
+					empty.textContent = scheduler.dataset.empty ?? "No one has marked this time yet.";
+					participantList.append(empty);
+				} else [...people].sort(([left], [right]) => left.localeCompare(right)).forEach(([name, bringsBall]) => {
+					const item = document.createElement("li");
+					const firstHalf = halfHourPeople[0]?.has(name) ?? false;
+					const secondHalf = halfHourPeople[1]?.has(name) ?? false;
+					const timing = firstHalf === secondHalf ? "" : firstHalf ? " ◀" : " ▶";
+					item.textContent = `${name}${bringsBall ? " ⚽" : ""}${timing}`;
+					participantList.append(item);
+				});
+			} catch {
+				if (openSlot !== slot) return;
+				const unavailable = document.createElement("li");
+				unavailable.className = "participant-empty";
+				unavailable.textContent = "Participant details are unavailable.";
+				participantList.replaceChildren(unavailable);
+			}
+		};
+
+		const showActivityParticipants = (activity: ConfirmedSlot, anchor: HTMLButtonElement) => {
+			if (openSlot === anchor) {
+				closeParticipants();
+				return;
+			}
+			closeParticipants();
+			slotContext.textContent = `${activity.slot.dataset.day ?? ""} · ${activity.start}–${activity.end}`;
+			participantsHeading.textContent = scheduler.dataset.participants ?? "Participants";
+			participantList.replaceChildren();
+			const people = Object.entries(activity.rsvps).sort(([left], [right]) => left.localeCompare(right));
+			if (people.length === 0) {
+				const empty = document.createElement("li");
+				empty.className = "participant-empty";
+				empty.textContent = scheduler.dataset.empty ?? "No one has marked this time yet.";
+				participantList.append(empty);
+			} else {
+				people.forEach(([name, bringsBall]) => {
+					const person = document.createElement("li");
+					person.textContent = bringsBall ? `${name} ⚽` : name;
+					participantList.append(person);
+				});
+			}
+			participantsPopover.hidden = false;
+			openSlot = anchor;
+			popoverAnchor = anchor;
+			anchor.setAttribute("aria-expanded", "true");
+			positionPopover(participantsPopover, anchor);
+		};
+
+		const confirmActivity = async (startSlot: HTMLButtonElement, endSlot = startSlot) => {
+			const range = activityRange(startSlot, endSlot);
+			const slot = range[0]!;
+			const finalSlot = range.at(-1)!;
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase || !currentWeekStart || !slot.dataset.isoDate) return;
+			try {
+				const response = await fetch(`${apiBase}/api/pickup/v1/activities`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weekStart: currentWeekStart, date: slot.dataset.isoDate, startMinute: minuteForSlot(slot), endMinute: minuteForSlot(finalSlot) + 60, description: "" }) });
+				if (!response.ok) throw new Error("Activity publish failed");
+				await loadConfirmed();
+				confirmedPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+			} catch { /* conflicts remain server-side and do not create a fake card */ }
+		};
+
+		const requestAccess = (slot?: HTMLButtonElement) => {
+			selectedSlot = slot;
+			nameInput.value = currentName;
+			passwordInput.value = "";
+			passwordPopover.hidden = false;
+			positionPopover(passwordPopover, accessButton);
+			(currentName ? passwordInput : nameInput).focus();
+		};
+
+		accessButton.addEventListener("click", () => requestAccess());
+		logoutButton.addEventListener("click", () => {
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase) return;
+			void fetch(`${apiBase}/api/pickup/v1/logout`, { method: "POST", credentials: "include" }).finally(() => window.location.reload());
+		});
+		slots.forEach((slot) => {
+			slot.addEventListener("pointerdown", (event) => {
+				if (!unlocked || (mode !== "availability" && mode !== "decision")) return;
+				if (mode === "decision") {
+					event.preventDefault();
+					activityDrag = { pointerId: event.pointerId, start: slot, end: slot };
+					renderActivityRange(slot, slot);
+					return;
+				}
+				const availability = availabilityAtPoint(event.clientX, event.clientY);
+				if (!availability) return;
+				event.preventDefault();
+				availabilityDrag = { pointerId: event.pointerId, canBringBall, touched: new Set() };
+				updateAvailability(availability.slot, availability.halfHour, availabilityDrag.canBringBall, availabilityDrag.touched);
+			});
+			slot.addEventListener("click", (event) => {
+				if (!unlocked) return;
+				if (mode === "availability") {
+					if (ignoreAvailabilityClick) return;
+					const bounds = slot.getBoundingClientRect();
+					const halfHour = Math.min(1, Math.max(0, Math.floor(((event.clientY - bounds.top) / bounds.height) * 2)));
+					updateAvailability(slot, halfHour, canBringBall);
+					saveAvailability();
+					return;
+				}
+				if (mode === "decision") {
+					if (ignoreActivityClick) return;
+					confirmActivity(slot);
+					return;
+				}
+				showParticipants(slot);
+			});
+		});
+		document.addEventListener("pointermove", (event) => {
+			if (availabilityDrag && event.pointerId === availabilityDrag.pointerId) {
+				const availability = availabilityAtPoint(event.clientX, event.clientY);
+				if (availability) updateAvailability(availability.slot, availability.halfHour, availabilityDrag.canBringBall, availabilityDrag.touched);
+			}
+			if (activityDrag && event.pointerId === activityDrag.pointerId) {
+				const target = document.elementFromPoint(event.clientX, event.clientY);
+				const slot = target instanceof Element ? target.closest<HTMLButtonElement>(".slot") : null;
+				if (slot && scheduler.contains(slot) && slot.dataset.dayIndex === activityDrag.start.dataset.dayIndex) {
+					activityDrag.end = slot;
+					renderActivityRange(activityDrag.start, slot);
+				}
+			}
+		});
+		document.addEventListener("pointerup", (event) => {
+			if (availabilityDrag && event.pointerId === availabilityDrag.pointerId) {
+				availabilityDrag = undefined;
+				saveAvailability();
+				ignoreAvailabilityClick = true;
+				window.setTimeout(() => { ignoreAvailabilityClick = false; }, 0);
+			}
+			if (activityDrag && event.pointerId === activityDrag.pointerId) {
+				const { start, end } = activityDrag;
+				activityDrag = undefined;
+				renderActivityRange();
+				confirmActivity(start, end);
+				ignoreActivityClick = true;
+				window.setTimeout(() => { ignoreActivityClick = false; }, 0);
+			}
+		});
+		modeButtons.forEach((button) => {
+			button.addEventListener("click", () => setMode(button.dataset.mode as "availability" | "decision"));
+		});
+		const interruptTemperatureEasterEgg = () => {
+			temperatureSwitches = 0;
+			previousTemperatureUnit = scheduler.dataset.displayTemperatureUnit ?? "celsius";
+		};
+		colourButtons.forEach((button) => button.addEventListener("click", () => {
+			const colourMode = button.dataset.colourMode;
+			if (colourMode !== "attendance" && colourMode !== "weather") return;
+			scheduler.dataset.colourMode = colourMode;
+			colourButtons.forEach((candidate) => candidate.classList.toggle("is-active", candidate === button));
+		}));
+		const handleTemperatureSwitch = (unit: "celsius" | "fahrenheit") => {
+			if (!kelvinButton.hidden) {
+				temperatureSwitches = 0;
+				return;
+			}
+			temperatureSwitches = unit !== previousTemperatureUnit ? temperatureSwitches + 1 : 0;
+			previousTemperatureUnit = unit;
+			if (temperatureSwitches >= 5) {
+				kelvinButton.hidden = false;
+				temperatureButtons.forEach((candidate) => { if (candidate !== kelvinButton) candidate.hidden = true; });
+				kelvinUnlocked = true;
+				applyKelvinVisuals();
+				addKelvinComment();
+				renderComments();
+				scheduler.dataset.displayTemperatureUnit = "kelvin";
+				temperatureButtons.forEach((candidate) => candidate.classList.toggle("is-active", candidate === kelvinButton));
+				renderTemperatures();
+				return;
+			}
+			scheduler.dataset.displayTemperatureUnit = unit;
+			temperatureButtons.forEach((candidate) => candidate.classList.toggle("is-active", candidate.dataset.temperatureUnit === unit));
+			renderTemperatures();
+		};
+		// One authoritative capture-phase gate owns the entire sequence. It runs
+		// before button handlers, so stale development listeners cannot add a
+		// second, hidden count.
+		document.addEventListener("click", (event) => {
+			const elements = event.composedPath().filter((node): node is Element => node instanceof Element);
+			const temperatureButton = elements.find((element) => element.matches('button[data-temperature-unit="celsius"], button[data-temperature-unit="fahrenheit"]')) as HTMLButtonElement | undefined;
+			if (temperatureButton) {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				handleTemperatureSwitch(temperatureButton.dataset.temperatureUnit as "celsius" | "fahrenheit");
+				return;
+			}
+			interruptTemperatureEasterEgg();
+		}, true);
+		canBringBallInput.addEventListener("change", () => {
+			canBringBall = canBringBallInput.checked;
+		});
+
+		passwordForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			if (!nameInput.value.trim() || !passwordInput.value.trim()) {
+				passwordInput.reportValidity();
+				nameInput.reportValidity();
+				return;
+			}
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase) {
+				passwordInput.setCustomValidity("The schedule service is unavailable.");
+				passwordInput.reportValidity();
+				return;
+			}
+			void (async () => {
+				try {
+					const response = await fetch(`${apiBase}/api/pickup/v1/login`, {
+						method: "POST",
+						credentials: "include",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ name: nameInput.value.trim(), password: passwordInput.value, remember: rememberInput.checked }),
+					});
+					if (response.status === 401) {
+						passwordInput.setCustomValidity("Incorrect passphrase.");
+						passwordInput.reportValidity();
+						return;
+					}
+					if (!response.ok) throw new Error("Login failed");
+					passwordInput.setCustomValidity("");
+					await unlock(nameInput.value.trim(), rememberInput.checked);
+					passwordPopover.hidden = true;
+					if (selectedSlot) showParticipants(selectedSlot);
+					selectedSlot = undefined;
+				} catch {
+					passwordInput.setCustomValidity("The schedule service could not be reached.");
+					passwordInput.reportValidity();
+				}
+			})();
+		});
+
+		passwordPopover.querySelectorAll<HTMLButtonElement>("[data-password-close]").forEach((button) => {
+			button.addEventListener("click", () => { passwordPopover.hidden = true; });
+		});
+		commentForm.addEventListener("submit", async (event) => {
+			event.preventDefault();
+			const body = commentInput.value.trim();
+			if (!body) {
+				commentInput.reportValidity();
+				return;
+			}
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase || !currentWeekStart) return;
+			const response = editingCommentId
+				? await fetch(`${apiBase}/api/pickup/v1/comments/${encodeURIComponent(editingCommentId)}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body }) })
+				: await fetch(`${apiBase}/api/pickup/v1/comments`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weekStart: currentWeekStart, body, ...(replyingToId && replyingUnderId ? { parentId: replyingUnderId, replyToId: replyingToId } : {}) }) });
+			if (!response.ok) return;
+			resetCommentEditor();
+			await loadComments();
+		});
+		commentCancel.addEventListener("click", resetCommentEditor);
+		participantsPopover.querySelectorAll<HTMLButtonElement>("[data-popover-close]").forEach((button) => {
+			button.addEventListener("click", closeParticipants);
+		});
+		activityForm.addEventListener("submit", async (event) => {
+			event.preventDefault();
+			if (!editingActivity || activityEnd.value <= activityStart.value) return;
+			const apiBase = scheduler.dataset.apiBase;
+			if (!apiBase) return;
+			const toMinutes = (value: string) => {
+				const [hour, minute] = value.split(":").map(Number);
+				return hour * 60 + minute;
+			};
+			const response = await fetch(`${apiBase}/api/pickup/v1/activities/${encodeURIComponent(editingActivity.key)}`, { method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ startMinute: toMinutes(activityStart.value), endMinute: toMinutes(activityEnd.value), description: activityInput.value.trim() }) });
+			if (!response.ok) return;
+			await loadConfirmed();
+			closeActivityEditor();
+		});
+		activityEditor.querySelector<HTMLButtonElement>("[data-activity-close]")?.addEventListener("click", closeActivityEditor);
+		document.addEventListener("click", (event) => {
+			if (!(event.target instanceof Node)) return;
+			if (openSlot && !participantsPopover.contains(event.target) && !openSlot.contains(event.target) && !popoverAnchor?.contains(event.target)) closeParticipants();
+			if (!activityEditor.hidden && !activityEditor.contains(event.target) && !activityAnchor?.contains(event.target)) closeActivityEditor();
+			if (!passwordPopover.hidden && !passwordPopover.contains(event.target) && !accessButton.contains(event.target)) {
+				passwordPopover.hidden = true;
+			}
+		});
+		window.addEventListener("resize", () => {
+			if (openSlot && popoverAnchor) positionPopover(participantsPopover, popoverAnchor);
+			if (!activityEditor.hidden && activityAnchor) positionPopover(activityEditor, activityAnchor);
+			if (!passwordPopover.hidden) positionPopover(passwordPopover, accessButton);
+		});
+		window.addEventListener("scroll", () => {
+			if (openSlot && popoverAnchor) positionPopover(participantsPopover, popoverAnchor);
+			if (!activityEditor.hidden && activityAnchor) positionPopover(activityEditor, activityAnchor);
+			if (!passwordPopover.hidden) positionPopover(passwordPopover, accessButton);
+		}, { passive: true });
+		window.setInterval(renderConfirmed, 60_000);
+	});
+</script>
 
 <style>
 	.scheduler { margin-top: 3rem; }
 	.scheduler.embedded { margin-top: 0; }
 	.scheduler-caption { margin: 0 0 .75rem; color: var(--color-muted); font-size: .75rem; }
+	.scheduler-title-row { display: flex; flex-direction: column; align-items: flex-start; gap: .45rem; margin-bottom: 1rem; }
+	.scheduler-title-row .title { margin: 0; }
+	.scheduler-access { display: flex; align-items: center; gap: .65rem; color: var(--color-muted); font-size: .75rem; }
+	.scheduler-title-row .scheduler-access-button { padding: .22rem .3rem; font-size: 1.25rem; font-weight: 600; line-height: 1; }
+	.scheduler-current-user { color: var(--color-muted); }
+	.scheduler-access-button, .dialog-done { border: 1px solid var(--color-accent-2); background: transparent; color: var(--color-accent-2); cursor: pointer; padding: .35rem .55rem; font: inherit; font-weight: 600; }
+	.scheduler-access-button:hover, .scheduler-access-button:focus-visible, .dialog-done:hover, .dialog-done:focus-visible { background: color-mix(in oklab, var(--color-accent-2) 11%, transparent); outline: none; }
+	.scheduler-modes { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.2rem; }
+	.scheduler-scroll + .scheduler-colour-controls { margin-top: .45rem; }
+	.scheduler-colour-controls { display: inline-flex; align-items: center; gap: .5rem; color: var(--color-muted); font-size: .9375rem; font-weight: 600; }
+	.scheduler-colour-controls .scheduler-colour-button { padding: .38rem .65rem; font-size: .8125rem; }
+	.scheduler-option-buttons, .scheduler-legend .scheduler-option-buttons { display: inline-flex; gap: 0; }
+	.scheduler-option-buttons .scheduler-colour-button + .scheduler-colour-button { border-left: 0; }
+	.scheduler-colour-button { border: 1px solid var(--color-muted); background: transparent; color: inherit; cursor: pointer; padding: .18rem .4rem; font: inherit; font-size: inherit; }
+	.scheduler-colour-button.is-active { border-color: var(--color-accent-2); color: var(--color-accent-2); background: color-mix(in oklab, var(--color-accent-2) 10%, transparent); }
+	.scheduler-colour-button[data-temperature-unit="kelvin"], .scheduler-colour-button[data-temperature-unit="kelvin"].is-active { border-color: transparent; background: transparent; }
+	.scheduler-confirmed:not([hidden]) + .scheduler-modes { margin-top: 2rem; }
+	.scheduler-board { width: min(100%, 36rem); }
+	.scheduler-modes + .scheduler-scroll { margin-top: .7rem; }
+	.scheduler-ball-option { display: inline-flex; flex-basis: 100%; align-items: center; gap: .35rem; color: var(--color-global-text); font-size: .875rem; font-weight: 600; white-space: nowrap; }
+	.scheduler-ball-option input { width: .95rem; height: .95rem; margin: 0; accent-color: var(--color-accent); }
+	.scheduler-mode-button { border: 1px solid var(--color-accent-2); background: transparent; color: var(--color-accent-2); cursor: pointer; padding: .45rem .65rem; font: inherit; font-weight: 600; }
+	.scheduler-mode-button:hover, .scheduler-mode-button:focus-visible { background: color-mix(in oklab, var(--color-accent-2) 14%, transparent); outline: none; }
+	.scheduler-mode-button.is-active { border-color: var(--color-accent); background: color-mix(in oklab, var(--color-accent) 16%, transparent); }
+	.scheduler-confirmed { width: 100%; margin-top: 1.5rem; border-top: 1px dashed color-mix(in oklab, var(--color-global-text) 38%, transparent); padding-top: .85rem; }
+	.scheduler-section-title { color: var(--color-accent); font-size: .8125rem; font-weight: 700; letter-spacing: .02em; }
+	.confirmed-list { display: grid; gap: .35rem; margin: -.35rem 0 0; padding: 0; list-style: none; }
+	:global(.confirmed-empty) { color: var(--color-muted); font-size: .75rem; }
+	:global(.confirmed-card) { display: flex; align-items: stretch; }
+	:global(.confirmed-card-main) { display: grid; flex: 1; gap: .1rem; border: 1px solid var(--color-accent-2); background: var(--color-global-bg); color: inherit; padding: .45rem .55rem; text-align: left; font: inherit; }
+	:global(button.confirmed-card-main) { cursor: pointer; }
+	:global(button.confirmed-card-main:hover), :global(button.confirmed-card-main:focus-visible) { background: color-mix(in oklab, var(--color-accent-2) 14%, transparent); outline: none; }
+	:global(.confirmed-card-main strong) { color: var(--color-accent-2); font-size: 1rem; }
+	:global(.confirmed-card-main span) { color: var(--color-muted); font-size: .75rem; }
+	:global(.confirmed-card-main p) { margin: .08rem 0 0; color: var(--color-global-text); font-size: .8125rem; white-space: pre-wrap; }
+	:global(.confirmed-rsvp-summary) { margin-top: .1rem; color: var(--color-muted); font-size: .75rem; }
+	:global(.confirmed-rsvp-actions) { display: flex; align-items: stretch; border: 1px solid var(--color-accent-2); border-left: 0; }
+	:global(.confirmed-rsvp-button) { border: 0; border-left: 1px solid var(--color-accent-2); background: transparent; color: var(--color-accent-2); cursor: pointer; padding: .3rem .45rem; font: inherit; font-size: .75rem; }
+	:global(.confirmed-rsvp-button:first-child) { border-left: 0; }
+	:global(.confirmed-rsvp-button:hover), :global(.confirmed-rsvp-button:focus-visible), :global(.confirmed-rsvp-button.is-active) { background: color-mix(in oklab, var(--color-accent-2) 14%, transparent); outline: none; }
+	:global(.confirmed-rsvp-button.is-active) { border-color: var(--color-accent); color: var(--color-accent); }
+	:global(.confirmed-rsvp-button.is-chinese) { padding-inline: .65rem; }
+	:global(.confirmed-card.has-my-rsvp .confirmed-card-main strong) { color: var(--color-accent); }
+	:global(.confirmed-cancel) { border: 1px solid var(--color-accent-2); border-left: 0; background: transparent; color: var(--color-muted); cursor: pointer; padding: .5rem; font: inherit; font-size: .6875rem; }
+	:global(.confirmed-cancel:hover), :global(.confirmed-cancel:focus-visible) { background: color-mix(in oklab, var(--color-accent-2) 11%, transparent); outline: none; }
 	.scheduler-scroll { width: min(100%, 36rem); margin: 2rem 0 0; overflow-x: auto; border-top: 1px dashed color-mix(in oklab, var(--color-global-text) 38%, transparent); border-bottom: 1px dashed color-mix(in oklab, var(--color-global-text) 38%, transparent); }
 	.scheduler-grid { min-width: 23rem; padding: .8rem 0 .8rem 2.65rem; }
 	.day-headings, .hour-row { display: grid; grid-template-columns: repeat(7, minmax(2.85rem, 1fr)); gap: 2px; }
 	.day-heading { padding: 0 .4rem .55rem; color: var(--color-accent-2); font-size: .75rem; text-align: center; }
+	.day-heading.is-weekend { color: var(--color-accent); font-weight: 700; }
 	.day-heading span { display: block; margin-top: .12rem; color: var(--color-muted); font-size: .6875rem; font-weight: 400; }
+	.scheduler-sunset { align-self: center; margin-left: .45rem; color: var(--color-accent-2); font-size: .75rem; font-weight: 600; white-space: nowrap; }
 	.hour-row { position: relative; }
 	.hour-label { position: absolute; top: 0; right: calc(100% + .45rem); z-index: 1; color: var(--color-muted); font-size: .6rem; line-height: 1; transform: translateY(-50%); white-space: nowrap; }
 	.end-hour-label { top: auto; bottom: 0; transform: translateY(50%); }
-	.slot { position: relative; min-height: 2.85rem; padding: .25rem .34rem; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-global-text) 7%, transparent); }
-	.slot.clear { background: color-mix(in oklab, #f4d77b 38%, var(--color-global-bg)); }
-	.slot.mainly-clear { background: color-mix(in oklab, #f0dda1 30%, var(--color-global-bg)); }
-	.slot.partly-cloudy { background: color-mix(in oklab, #c6d4d8 26%, var(--color-global-bg)); }
-	.slot.cloud { background: color-mix(in oklab, #9bb8c8 22%, var(--color-global-bg)); }
-	.slot.fog { background: color-mix(in oklab, #bac2c4 27%, var(--color-global-bg)); }
-	.slot.drizzle { background: color-mix(in oklab, #8dbbce 26%, var(--color-global-bg)); }
-	.slot.rain { background: color-mix(in oklab, #71a9c7 30%, var(--color-global-bg)); }
-	.slot.heavy-rain { background: color-mix(in oklab, #5a95b7 40%, var(--color-global-bg)); }
-	.slot.freezing-rain { background: color-mix(in oklab, #b5b6d7 31%, var(--color-global-bg)); }
-	.slot.snow { background: color-mix(in oklab, #d8e7ed 42%, var(--color-global-bg)); }
-	.slot.heavy-snow { background: color-mix(in oklab, #b7d3df 38%, var(--color-global-bg)); }
-	.slot.thunderstorm { background: color-mix(in oklab, #9491bd 35%, var(--color-global-bg)); }
-	.slot.hail { background: color-mix(in oklab, #c1cbd4 38%, var(--color-global-bg)); }
-	.temperature { position: absolute; top: .25rem; left: .34rem; color: var(--color-muted); font-size: .625rem; }
-	.weather-icon { position: absolute; top: .22rem; right: .28rem; width: 1.1rem; height: 1.1rem; color: var(--color-accent-2); opacity: .72; }
-	.slot strong { position: absolute; right: .34rem; bottom: .24rem; color: var(--color-accent-2); font-size: 1.18rem; line-height: 1; }
+	.slot { position: relative; min-height: 2.85rem; width: 100%; border: 0; padding: .25rem .34rem; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-global-text) 7%, transparent); color: inherit; cursor: pointer; font: inherit; text-align: left; }
+	.slot:hover, .slot:focus-visible { box-shadow: inset 0 0 0 2px var(--color-accent-2); outline: none; z-index: 1; }
+	.slot.clear { background: color-mix(in oklab, #ffd24d 64%, var(--color-global-bg)); }
+	.slot.mainly-clear { background: color-mix(in oklab, #ffc95c 46%, var(--color-global-bg)); }
+	.slot.partly-cloudy { background: color-mix(in oklab, #84b6d2 44%, var(--color-global-bg)); }
+	.slot.cloud { background: color-mix(in oklab, #668eaa 42%, var(--color-global-bg)); }
+	.slot.fog { background: color-mix(in oklab, #9aa8aa 42%, var(--color-global-bg)); }
+	.slot.drizzle { background: color-mix(in oklab, #4e9ec5 44%, var(--color-global-bg)); }
+	.slot.rain { background: color-mix(in oklab, #2d78b0 54%, var(--color-global-bg)); }
+	.slot.heavy-rain { background: color-mix(in oklab, #225681 66%, var(--color-global-bg)); }
+	.slot.freezing-rain { background: color-mix(in oklab, #8c84c9 52%, var(--color-global-bg)); }
+	.slot.snow { background: color-mix(in oklab, #bfe9f5 62%, var(--color-global-bg)); }
+	.slot.heavy-snow { background: color-mix(in oklab, #80c7dc 58%, var(--color-global-bg)); }
+	.slot.thunderstorm { background: color-mix(in oklab, #6960a8 60%, var(--color-global-bg)); }
+	.slot.hail { background: color-mix(in oklab, #91bad0 56%, var(--color-global-bg)); }
+	.temperature { position: absolute; top: .25rem; left: .34rem; color: var(--color-muted); font-size: .7rem; font-weight: 500; }
+	.weather-icons { position: absolute; right: .28rem; bottom: .22rem; width: 1.1rem; height: 1.1rem; color: var(--color-accent-2); opacity: .72; }
+	.weather-icon { display: none; width: 1.1rem; height: 1.1rem; }
+	.slot.clear .weather-icon-clear, .slot.mainly-clear .weather-icon-mainly-clear, .slot.partly-cloudy .weather-icon-partly-cloudy, .slot.cloud .weather-icon-cloud, .slot.fog .weather-icon-fog, .slot.drizzle .weather-icon-drizzle, .slot.rain .weather-icon-rain, .slot.heavy-rain .weather-icon-heavy-rain, .slot.freezing-rain .weather-icon-freezing-rain, .slot.snow .weather-icon-snow, .slot.heavy-snow .weather-icon-heavy-snow, .slot.thunderstorm .weather-icon-thunderstorm, .slot.hail .weather-icon-hail { display: block; }
+	.slot.kelvin-clouds .weather-icon-clear, .slot.kelvin-clouds .weather-icon-mainly-clear { display: none; }
+	.slot.kelvin-clouds .weather-icon-cloud-kelvin { display: block; }
+	.slot strong { display: none; position: absolute; right: .34rem; bottom: .24rem; color: var(--color-accent-2); font-size: 1.18rem; line-height: 1; }
 	.slot strong.empty { color: var(--color-muted); font-size: 1rem; font-weight: 400; }
-	.ball { position: absolute; left: .3rem; bottom: .22rem; font-size: .62rem; }
+	.slot > :global(.ball) { display: none; position: absolute; z-index: 3; left: .44rem; right: auto; top: auto; bottom: .48rem; margin: 0; font-size: .62rem; line-height: 1; }
+	.availability-quarters { display: none; }
+	.scheduler[data-mode="availability"] .slot { min-height: 2.85rem; background: var(--color-global-bg) !important; cursor: cell; }
+	.scheduler[data-mode="availability"] .slot:hover, .scheduler[data-mode="availability"] .slot:focus-visible { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-accent) 45%, transparent); }
+	.scheduler[data-mode="availability"] .slot > .temperature, .scheduler[data-mode="availability"] .slot > .weather-icons, .scheduler[data-mode="availability"] .slot > strong, .scheduler[data-mode="availability"] .slot > :global(.ball) { display: none; }
+	.scheduler[data-mode="availability"] .day-headings, .scheduler[data-mode="availability"] .hour-row { gap: 2px; }
+	.scheduler[data-mode="availability"] .availability-quarters { display: grid; position: absolute; inset: 0; grid-template-rows: repeat(2, 1fr); }
+	.scheduler[data-mode="availability"] .availability-quarter { border-top: 1px solid color-mix(in oklab, var(--color-global-text) 12%, transparent); }
+	.scheduler[data-mode="availability"] .availability-quarter:first-child { border-top: 0; }
+	.scheduler[data-mode="availability"] .slot.is-full-availability .availability-quarter + .availability-quarter { border-top-color: transparent; }
+	.scheduler[data-mode="availability"] .availability-quarter.can-bring-ball { position: relative; }
+	.scheduler[data-mode="availability"] .availability-quarter.can-bring-ball::after { content: "⚽"; position: absolute; left: .16rem; right: auto; top: auto; bottom: .12rem; transform: none; font-size: .56rem; line-height: 1; }
+	.scheduler[data-mode="availability"] .availability-quarter:hover { position: relative; z-index: 1; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-accent) 65%, transparent); }
+	.scheduler[data-mode="availability"] .slot::after { content: ""; position: absolute; inset: 0; z-index: 2; border-bottom: 1px solid color-mix(in oklab, var(--color-global-text) 12%, transparent); pointer-events: none; }
+	.scheduler[data-mode="availability"] .availability-quarter.is-selected { background: color-mix(in oklab, var(--color-accent) 45%, var(--color-global-bg)); }
+	.scheduler.is-unlocked[data-mode="availability"] .slot strong { display: none; }
+	.scheduler:not(.is-unlocked) .weather-icons, .scheduler:not(.is-unlocked) .weather-icon { width: 1.45rem; height: 1.45rem; }
+	.scheduler.is-unlocked .weather-icons { top: .22rem; bottom: auto; }
+	.scheduler.is-unlocked .slot strong, .scheduler.is-unlocked :global(.ball) { display: block; }
+	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot { --attendance-colour: oklch(55% .195 19); background: var(--color-global-bg); }
+	:global([data-theme="dark"]) .scheduler.is-unlocked[data-colour-mode="attendance"] .slot { --attendance-colour: oklch(70% .14 164); }
+	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot.people-0 { background: color-mix(in oklab, var(--color-global-bg) 97%, var(--attendance-colour)); }
+	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot.people-1 { background: color-mix(in oklab, var(--color-global-bg) 93%, var(--attendance-colour)); }
+	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot.people-2 { background: color-mix(in oklab, var(--color-global-bg) 86%, var(--attendance-colour)); }
+	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot.people-3 { background: color-mix(in oklab, var(--color-global-bg) 78%, var(--attendance-colour)); }
+	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot.people-4 { background: color-mix(in oklab, var(--color-global-bg) 68%, var(--attendance-colour)); }
+	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot.people-5 { background: color-mix(in oklab, var(--color-global-bg) 56%, var(--attendance-colour)); }
+	.scheduler[data-mode="decision"] .slot { cursor: crosshair; touch-action: none; }
+	.scheduler[data-mode="decision"] .slot.is-activity-range { box-shadow: inset 0 0 0 2px var(--color-accent-2); z-index: 1; }
 	.scheduler-legend { display: flex; flex-wrap: wrap; gap: .45rem 1rem; margin-top: .85rem; color: var(--color-muted); font-size: .6875rem; }
 	.scheduler-legend span { display: inline-flex; align-items: center; gap: .25rem; white-space: nowrap; }
 	.scheduler-legend :global(svg) { width: .85rem; height: .85rem; vertical-align: -.18rem; }
 	.scheduler-legend strong { color: var(--color-accent-2); }
+	.scheduler-comments { width: 100%; margin-top: 2rem; border-top: 1px dashed color-mix(in oklab, var(--color-global-text) 38%, transparent); padding-top: 1rem; }
+	.comment-list { display: grid; gap: .65rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+	:global(.comment) { border-bottom: 1px dashed color-mix(in oklab, var(--color-global-text) 25%, transparent); padding-bottom: .6rem; }
+	:global(.comment-reply) { margin-left: 1rem; padding-left: .75rem; border-left: 2px solid color-mix(in oklab, var(--color-accent-2) 35%, transparent); }
+	:global(.comment strong) { color: var(--color-accent-2); font-size: .75rem; }
+	:global(.comment-meta) { line-height: 1; }
+	:global(.comment-timestamp) { margin-left: .45rem; color: var(--color-muted); font-size: .6875rem; }
+	:global(.comment p) { margin: .25rem 0 0; font-size: .875rem; white-space: pre-wrap; }
+	:global(.comment-mention) { display: block; overflow: hidden; color: var(--color-accent-2); font-size: .75rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+	:global(.comment-empty) { color: var(--color-muted); font-size: .75rem; }
+	:global(.comment-controls), .comment-actions { display: flex; gap: .7rem; margin-top: .45rem; }
+	.comment-replying { margin: 0 0 .4rem; color: var(--color-muted); font-size: .75rem; }
+	:global(.comment-controls button) { border: 0; background: transparent; color: var(--color-muted); cursor: pointer; padding: 0; font: inherit; font-size: .6875rem; text-decoration: underline; text-underline-offset: .16em; }
+	.comment-form textarea { box-sizing: border-box; width: 100%; min-height: 4.5rem; resize: vertical; border: 1px solid var(--color-muted); background: transparent; color: inherit; padding: .45rem .5rem; font: inherit; font-size: .875rem; }
+	.scheduler-popover { position: fixed; z-index: 10; box-sizing: border-box; width: min(13rem, calc(100vw - 1.5rem)); max-height: calc(100vh - 1.5rem); overflow: auto; border: 1px solid var(--color-global-text); background: var(--color-global-bg); color: var(--color-global-text); padding: .85rem; box-shadow: .18rem .18rem 0 color-mix(in oklab, var(--color-global-text) 18%, transparent); }
+	.scheduler-popover[hidden] { display: none; }
+	.activity-editor { width: min(19rem, calc(100vw - 1.5rem)); }
+	.password-label { display: grid; gap: .45rem; margin: 1rem 0; font-size: .75rem; }
+	.password-label input { width: 100%; border: 1px solid var(--color-muted); background: transparent; color: inherit; padding: .45rem .5rem; font: inherit; }
+	.remember-label { display: inline-flex; align-items: center; gap: .4rem; margin: -.25rem 0 1rem; color: var(--color-muted); font-size: .75rem; }
+	.remember-label input { margin: 0; accent-color: var(--color-accent-2); }
+	.password-actions { display: flex; gap: 0; align-items: center; }
+	.password-actions .dialog-done { margin-top: 0; }
+	.participant-list { display: grid; gap: .35rem; margin: 1rem 0; padding: 0; list-style: none; }
+	.participant-list li { border-bottom: 1px dashed color-mix(in oklab, var(--color-global-text) 25%, transparent); padding-bottom: .35rem; }
+	.participant-list .participant-empty { color: var(--color-muted); }
+	.activity-description { display: grid; gap: .4rem; margin: .85rem 0 0; color: var(--color-muted); font-size: .75rem; }
+	.activity-description textarea { box-sizing: border-box; width: 100%; min-height: 3.75rem; resize: vertical; border: 1px solid var(--color-muted); background: transparent; color: inherit; padding: .4rem .5rem; font: inherit; font-size: .8125rem; }
+	.activity-times { display: grid; grid-template-columns: repeat(2, 1fr); gap: .55rem; margin-top: .9rem; }
+	.activity-times label { display: grid; gap: .4rem; color: var(--color-muted); font-size: .75rem; }
+	.activity-times input { box-sizing: border-box; width: 100%; border: 1px solid var(--color-muted); background: transparent; color: inherit; padding: .35rem .4rem; font: inherit; }
+	.activity-editor-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: .4rem; margin-top: .85rem; }
+	.activity-editor-actions button { display: inline-flex; min-height: 2rem; align-items: center; }
+	.activity-editor-actions .dialog-done { margin-top: 0; }
+	.dialog-done { margin-top: .15rem; }
+
+	@media (min-width: 720px) {
+		.scheduler-board, .scheduler-scroll { width: min(100%, 38rem); }
+		.scheduler-grid { padding-left: 3rem; }
+		.day-headings, .hour-row { grid-template-columns: repeat(7, minmax(3.2rem, 1fr)); }
+		.day-heading { font-size: .8125rem; }
+		.day-heading span { font-size: .75rem; }
+		.hour-label { font-size: .6875rem; }
+		.slot, .scheduler[data-mode="availability"] .slot { min-height: 3.25rem; }
+		.temperature { font-size: .75rem; }
+		.weather-icons, .weather-icon { width: 1.25rem; height: 1.25rem; }
+		.slot strong { font-size: 1.3rem; }
+		.slot > :global(.ball) { font-size: .7rem; }
+	}
 
 	@media (max-width: 420px) {
+		:global(.confirmed-rsvp-actions:not(.is-cancel)) { flex: 0 0 clamp(5rem, 27vw, 6.25rem); flex-direction: column; }
+		:global(.confirmed-rsvp-actions:not(.is-cancel) .confirmed-rsvp-button) { flex: 1; border-top: 1px solid var(--color-accent-2); border-left: 0; line-height: 1.15; white-space: normal; }
+		:global(.confirmed-rsvp-actions:not(.is-cancel) .confirmed-rsvp-button:first-child) { border-top: 0; }
 		.scheduler-grid { min-width: 0; padding-left: 2.25rem; }
 		.day-headings, .hour-row { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 		.day-heading { padding-inline: .2rem; font-size: .6875rem; }
 		.day-heading span { font-size: .6rem; }
 		.hour-label { right: calc(100% + .32rem); font-size: .55rem; }
 		.slot { min-height: 2.75rem; padding-inline: .25rem; }
-		.temperature { left: .25rem; font-size: .56rem; }
-		.weather-icon { right: .2rem; width: .95rem; height: .95rem; }
+		.scheduler[data-mode="availability"] .slot { min-height: 2.75rem; }
+		.temperature { left: .25rem; font-size: .62rem; }
+		.weather-icons, .weather-icon { right: .2rem; width: .95rem; height: .95rem; }
+		.scheduler:not(.is-unlocked) .weather-icons, .scheduler:not(.is-unlocked) .weather-icon { width: 1.2rem; height: 1.2rem; }
 		.slot strong { right: .25rem; font-size: 1.1rem; }
-		.ball { left: .22rem; font-size: .56rem; }
+		.slot > :global(.ball) { left: .32rem; bottom: .38rem; font-size: .56rem; }
+	}
+
+	@media (max-width: 600px) {
+		.scheduler-popover { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%); }
 	}
 </style>
