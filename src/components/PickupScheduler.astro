@@ -202,8 +202,8 @@ const weatherLabels = isZh
 			<p class="scheduler-caption" data-activity-context></p>
 			<h2 class="title text-lg">{copy.activity}</h2>
 			<div class="activity-times">
-				<label><span>{copy.startTime}</span><input data-activity-start required step="900" type="time" /></label>
-				<label><span>{copy.endTime}</span><input data-activity-end required step="900" type="time" /></label>
+				<label><span>{copy.startTime}</span><input data-activity-start required step="60" type="time" /></label>
+				<label><span>{copy.endTime}</span><input data-activity-end required step="60" type="time" /></label>
 			</div>
 			<label class="activity-description"><span>{copy.activityDescription}</span><textarea data-activity-input placeholder={copy.activityPlaceholder}></textarea></label>
 			<div class="activity-editor-actions">

@@ -120,8 +120,9 @@ const hasActivityEnded = (activity: Pick<ActivityRow, "date" | "endMinute">) => 
 	return activity.date < now.date || (activity.date === now.date && activity.endMinute <= now.minute);
 };
 const validSlot = (minute: unknown): minute is number => typeof minute === "number" && Number.isInteger(minute) && minute >= 720 && minute <= 1170 && minute % 30 === 0;
+const validActivityStart = (minute: unknown): minute is number => typeof minute === "number" && Number.isInteger(minute) && minute >= 720 && minute < 1200;
+const validActivityEnd = (minute: unknown): minute is number => typeof minute === "number" && Number.isInteger(minute) && minute > 720 && minute <= 1200;
 const validName = (name: unknown): name is string => typeof name === "string" && name.trim().length >= 1 && name.trim().length <= 48;
-const activitySlotMinutes = (startMinute: number, endMinute: number) => Array.from({ length: (endMinute - startMinute) / 30 }, (_, index) => startMinute + index * 30);
 
 const readJson = async (request: Request) => {
 	try {
@@ -183,7 +184,6 @@ const pruneExpiredActivities = async (env: Env) => {
 	const expired = activities.results.filter(hasActivityEnded);
 	if (expired.length > 0) await env.DB.batch(expired.flatMap((activity) => [
 		env.DB.prepare("DELETE FROM activity_rsvps WHERE activity_id = ?1").bind(activity.id),
-		env.DB.prepare("DELETE FROM activity_slots WHERE activity_id = ?1").bind(activity.id),
 		env.DB.prepare("DELETE FROM activities WHERE id = ?1").bind(activity.id),
 	]));
 };
@@ -252,18 +252,13 @@ const createActivity = async (request: Request, env: Env) => {
 	const startMinute = body.startMinute;
 	const endMinute = body.endMinute;
 	const description = typeof body.description === "string" ? body.description.trim() : "";
-	if (!isDateInWeek(date, weekStart) || !validSlot(startMinute) || typeof endMinute !== "number" || !Number.isInteger(endMinute) || endMinute > 1200 || endMinute % 30 !== 0 || description.length > 500) throw new HttpError(400, "Invalid activity.");
+	if (!isDateInWeek(date, weekStart) || !validActivityStart(startMinute) || !validActivityEnd(endMinute) || description.length > 500) throw new HttpError(400, "Invalid activity.");
 	if (endMinute <= startMinute) throw new HttpError(400, "Invalid activity.");
-	const conflict = await env.DB.prepare("SELECT 1 FROM activity_slots WHERE date = ?1 AND start_minute >= ?2 AND start_minute < ?3 LIMIT 1").bind(date, startMinute, endMinute).first();
-	if (conflict) throw new HttpError(409, "This time is already published.");
 	const id = crypto.randomUUID();
 	try {
-		await env.DB.batch([
-			env.DB.prepare("INSERT INTO activities (id, week_start, date, start_minute, end_minute, description, created_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)").bind(id, weekStart, date, startMinute, endMinute, description, session.name),
-			...activitySlotMinutes(startMinute, endMinute).map((minute) => env.DB.prepare("INSERT INTO activity_slots (date, start_minute, activity_id) VALUES (?1, ?2, ?3)").bind(date, minute, id)),
-		]);
+		await env.DB.prepare("INSERT INTO activities (id, week_start, date, start_minute, end_minute, description, created_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)").bind(id, weekStart, date, startMinute, endMinute, description, session.name).run();
 	} catch (error) {
-		if (error instanceof Error && /UNIQUE constraint failed/.test(error.message)) throw new HttpError(409, "This time is already published.");
+		if (error instanceof Error && /UNIQUE constraint failed/.test(error.message)) throw new HttpError(409, "An activity already starts within this half-hour.");
 		throw error;
 	}
 	return json(request, env, { id }, { status: 201 });
@@ -275,20 +270,14 @@ const updateActivity = async (request: Request, env: Env, id: string) => {
 	const startMinute = body.startMinute;
 	const endMinute = body.endMinute;
 	const description = typeof body.description === "string" ? body.description.trim() : "";
-	if (!validSlot(startMinute) || typeof endMinute !== "number" || !Number.isInteger(endMinute) || endMinute > 1200 || endMinute % 30 !== 0 || description.length > 500) throw new HttpError(400, "Invalid activity.");
+	if (!validActivityStart(startMinute) || !validActivityEnd(endMinute) || description.length > 500) throw new HttpError(400, "Invalid activity.");
 	if (endMinute <= startMinute) throw new HttpError(400, "Invalid activity.");
 	const activity = await env.DB.prepare("SELECT date FROM activities WHERE id = ?1 AND created_by = ?2").bind(id, session.name).first<{ date: string }>();
 	if (!activity) throw new HttpError(404, "Activity not found.");
-	const conflict = await env.DB.prepare("SELECT 1 FROM activity_slots WHERE date = ?1 AND start_minute >= ?2 AND start_minute < ?3 AND activity_id != ?4 LIMIT 1").bind(activity.date, startMinute, endMinute, id).first();
-	if (conflict) throw new HttpError(409, "This time is already published.");
 	try {
-		await env.DB.batch([
-			env.DB.prepare("DELETE FROM activity_slots WHERE activity_id = ?1").bind(id),
-			...activitySlotMinutes(startMinute, endMinute).map((minute) => env.DB.prepare("INSERT INTO activity_slots (date, start_minute, activity_id) VALUES (?1, ?2, ?3)").bind(activity.date, minute, id)),
-			env.DB.prepare("UPDATE activities SET start_minute = ?1, end_minute = ?2, description = ?3 WHERE id = ?4").bind(startMinute, endMinute, description, id),
-		]);
+		await env.DB.prepare("UPDATE activities SET start_minute = ?1, end_minute = ?2, description = ?3 WHERE id = ?4").bind(startMinute, endMinute, description, id).run();
 	} catch (error) {
-		if (error instanceof Error && /UNIQUE constraint failed/.test(error.message)) throw new HttpError(409, "This time is already published.");
+		if (error instanceof Error && /UNIQUE constraint failed/.test(error.message)) throw new HttpError(409, "An activity already starts within this half-hour.");
 		throw error;
 	}
 	return json(request, env, { ok: true });
@@ -300,7 +289,6 @@ const deleteActivity = async (request: Request, env: Env, id: string) => {
 	if (!activity) throw new HttpError(404, "Activity not found.");
 	await env.DB.batch([
 		env.DB.prepare("DELETE FROM activity_rsvps WHERE activity_id = ?1").bind(id),
-		env.DB.prepare("DELETE FROM activity_slots WHERE activity_id = ?1").bind(id),
 		env.DB.prepare("DELETE FROM activities WHERE id = ?1 AND created_by = ?2").bind(id, session.name),
 	]);
 	return json(request, env, { ok: true });
