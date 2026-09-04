@@ -89,6 +89,7 @@ const weatherLabels = isZh
 			<button class="scheduler-mode-button" data-mode="decision" type="button">{copy.decideTime}</button>
 			<span class="scheduler-sunset" data-today-sunset hidden></span>
 			<label class="scheduler-ball-option" data-ball-option hidden><input data-can-bring-ball type="checkbox" /> ⚽ {isZh ? "我能带球" : "I can bring a ball"}</label>
+			<p class="scheduler-touch-hint" data-touch-hint hidden>{isZh ? "停留后拖动进入连续选格" : "Hold, then drag to select consecutive slots."}</p>
 		</div>
 		<div class="scheduler-scroll">
 			<div class="scheduler-grid">
@@ -277,6 +278,7 @@ const weatherLabels = isZh
 		const modeButtons = scheduler.querySelectorAll<HTMLButtonElement>("[data-mode]");
 		const todaySunset = scheduler.querySelector<HTMLElement>("[data-today-sunset]")!;
 		const ballOption = scheduler.querySelector<HTMLElement>("[data-ball-option]")!;
+		const touchHint = scheduler.querySelector<HTMLElement>("[data-touch-hint]")!;
 		const canBringBallInput = scheduler.querySelector<HTMLInputElement>("[data-can-bring-ball]")!;
 		const commentList = scheduler.querySelector<HTMLUListElement>("[data-comment-list]")!;
 		const commentForm = scheduler.querySelector<HTMLFormElement>("[data-comment-form]")!;
@@ -304,7 +306,16 @@ const weatherLabels = isZh
 		const myAvailability = new Set<string>();
 		const ballAvailability = new Set<string>();
 		let canBringBall = false;
-		let availabilityDrag: { pointerId: number; canBringBall: boolean; touched: Set<string> } | undefined;
+		type AvailabilityPoint = { slot: HTMLButtonElement; halfHour: number };
+		type AvailabilityAction = "available" | "ball" | "remove";
+		let availabilityDrag: {
+			pointerId: number;
+			start: AvailabilityPoint;
+			end: AvailabilityPoint;
+			action: AvailabilityAction;
+			availabilityBefore: Set<string>;
+			ballsBefore: Set<string>;
+		} | undefined;
 		let activityDrag: { pointerId: number; start: HTMLButtonElement; end: HTMLButtonElement } | undefined;
 		let pendingTouchDrag: { pointerId: number; slot: HTMLButtonElement; mode: "availability" | "decision"; clientX: number; clientY: number; timer: number } | undefined;
 		let activeTouchPointerId: number | undefined;
@@ -432,13 +443,66 @@ const weatherLabels = isZh
 				await loadAvailability();
 			}
 		};
-		const availabilityAtPoint = (clientX: number, clientY: number) => {
+		const availabilityAtPoint = (clientX: number, clientY: number): AvailabilityPoint | undefined => {
 			const target = document.elementFromPoint(clientX, clientY);
 			const slot = target instanceof Element ? target.closest<HTMLButtonElement>(".slot") : null;
 			if (!slot || !scheduler.contains(slot)) return undefined;
 			const bounds = slot.getBoundingClientRect();
 			const halfHour = Math.min(1, Math.max(0, Math.floor(((clientY - bounds.top) / bounds.height) * 2)));
 			return { slot, halfHour };
+		};
+		const availabilityRange = (start: AvailabilityPoint, end: AvailabilityPoint) => {
+			const startDay = Number(start.slot.dataset.dayIndex);
+			const endDay = Number(end.slot.dataset.dayIndex);
+			const startRow = Number(start.slot.dataset.hourIndex) * 2 + start.halfHour;
+			const endRow = Number(end.slot.dataset.hourIndex) * 2 + end.halfHour;
+			const firstDay = Math.min(startDay, endDay);
+			const lastDay = Math.max(startDay, endDay);
+			const firstRow = Math.min(startRow, endRow);
+			const lastRow = Math.max(startRow, endRow);
+			return [...slots].flatMap((slot) => [0, 1].flatMap((halfHour) => {
+				const day = Number(slot.dataset.dayIndex);
+				const row = Number(slot.dataset.hourIndex) * 2 + halfHour;
+				return day >= firstDay && day <= lastDay && row >= firstRow && row <= lastRow
+					? [{ slot, halfHour }]
+					: [];
+			}));
+		};
+		const availabilityActionAt = (point: AvailabilityPoint, bringBall: boolean): AvailabilityAction => {
+			const key = availabilityKey(point.slot, point.halfHour);
+			if (!myAvailability.has(key)) return bringBall ? "ball" : "available";
+			if (bringBall && !ballAvailability.has(key)) return "ball";
+			return "remove";
+		};
+		const renderAvailabilityDrag = () => {
+			if (!availabilityDrag) return;
+			myAvailability.clear();
+			ballAvailability.clear();
+			availabilityDrag.availabilityBefore.forEach((key) => myAvailability.add(key));
+			availabilityDrag.ballsBefore.forEach((key) => ballAvailability.add(key));
+			availabilityRange(availabilityDrag.start, availabilityDrag.end).forEach(({ slot, halfHour }) => {
+				const key = availabilityKey(slot, halfHour);
+				if (availabilityDrag!.action === "remove") {
+					myAvailability.delete(key);
+					ballAvailability.delete(key);
+				} else {
+					myAvailability.add(key);
+					if (availabilityDrag!.action === "ball") ballAvailability.add(key);
+					else ballAvailability.delete(key);
+				}
+			});
+			renderAvailability();
+		};
+		const beginAvailabilityDrag = (pointerId: number, point: AvailabilityPoint) => {
+			availabilityDrag = {
+				pointerId,
+				start: point,
+				end: point,
+				action: availabilityActionAt(point, canBringBall),
+				availabilityBefore: new Set(myAvailability),
+				ballsBefore: new Set(ballAvailability),
+			};
+			renderAvailabilityDrag();
 		};
 		const updateAvailability = (slot: HTMLButtonElement, halfHour: number, bringBall: boolean, touched?: Set<string>) => {
 			const key = availabilityKey(slot, halfHour);
@@ -511,6 +575,7 @@ const weatherLabels = isZh
 				button.setAttribute("aria-pressed", String(active));
 			});
 			ballOption.hidden = mode !== "availability";
+			touchHint.hidden = mode !== "availability";
 			if (mode === "availability") renderAvailability();
 			if (mode !== "decision") closeParticipants();
 			renderConfirmed();
@@ -975,8 +1040,7 @@ const weatherLabels = isZh
 						}
 						const availability = availabilityAtPoint(event.clientX, event.clientY);
 						if (!availability) return;
-						availabilityDrag = { pointerId: event.pointerId, canBringBall, touched: new Set() };
-						updateAvailability(availability.slot, availability.halfHour, availabilityDrag.canBringBall, availabilityDrag.touched);
+						beginAvailabilityDrag(event.pointerId, availability);
 					}, 250);
 					pendingTouchDrag = { pointerId: event.pointerId, slot, mode: touchMode, clientX: event.clientX, clientY: event.clientY, timer };
 					return;
@@ -991,8 +1055,7 @@ const weatherLabels = isZh
 				const availability = availabilityAtPoint(event.clientX, event.clientY);
 				if (!availability) return;
 				event.preventDefault();
-				availabilityDrag = { pointerId: event.pointerId, canBringBall, touched: new Set() };
-				updateAvailability(availability.slot, availability.halfHour, availabilityDrag.canBringBall, availabilityDrag.touched);
+				beginAvailabilityDrag(event.pointerId, availability);
 			});
 			slot.addEventListener("click", (event) => {
 				if (!unlocked) return;
@@ -1022,7 +1085,10 @@ const weatherLabels = isZh
 			}
 			if (availabilityDrag && event.pointerId === availabilityDrag.pointerId) {
 				const availability = availabilityAtPoint(event.clientX, event.clientY);
-				if (availability) updateAvailability(availability.slot, availability.halfHour, availabilityDrag.canBringBall, availabilityDrag.touched);
+				if (availability) {
+					availabilityDrag.end = availability;
+					renderAvailabilityDrag();
+				}
 			}
 			if (activityDrag && event.pointerId === activityDrag.pointerId) {
 				const target = document.elementFromPoint(event.clientX, event.clientY);
@@ -1250,6 +1316,7 @@ const weatherLabels = isZh
 	.scheduler-board { width: min(100%, 36rem); }
 	.scheduler-modes + .scheduler-scroll { margin-top: .7rem; }
 	.scheduler-ball-option { display: inline-flex; flex-basis: 100%; align-items: center; gap: .35rem; color: var(--color-global-text); font-size: .875rem; font-weight: 600; white-space: nowrap; }
+	.scheduler-touch-hint { display: none; }
 	.scheduler-ball-option input { width: .95rem; height: .95rem; margin: 0; accent-color: var(--color-accent); }
 	.scheduler-mode-button { border: 1px solid var(--color-accent-2); background: transparent; color: var(--color-accent-2); cursor: pointer; padding: .45rem .65rem; font: inherit; font-weight: 600; }
 	.scheduler-mode-button:hover, .scheduler-mode-button:focus-visible { background: color-mix(in oklab, var(--color-accent-2) 14%, transparent); outline: none; }
@@ -1392,6 +1459,7 @@ const weatherLabels = isZh
 	}
 
 	@media (max-width: 420px) {
+		.scheduler-touch-hint:not([hidden]) { display: block; flex-basis: 100%; margin: -.1rem 0 0; color: var(--color-muted); font-size: .6875rem; }
 		:global(.confirmed-rsvp-actions:not(.is-cancel)) { flex: 0 0 clamp(5rem, 27vw, 6.25rem); flex-direction: column; }
 		:global(.confirmed-rsvp-actions:not(.is-cancel) .confirmed-rsvp-button) { flex: 1; border-top: 1px solid var(--color-accent-2); border-left: 0; line-height: 1.15; white-space: normal; }
 		:global(.confirmed-rsvp-actions:not(.is-cancel) .confirmed-rsvp-button:first-child) { border-top: 0; }
