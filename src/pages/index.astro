@@ -11,7 +11,12 @@
 		<script is:inline>
 			const preferredLanguage = (navigator.languages?.[0] || navigator.language || "en").toLowerCase();
 			const locale = preferredLanguage.startsWith("zh") ? "zh" : "en";
-			window.location.replace(`/${locale}/${window.location.search}${window.location.hash}`);
+			const pickupEntryHost = "picnic-fc.tadorna-ferruginea.com";
+			const destination =
+				window.location.hostname === pickupEntryHost
+					? `https://tadorna-ferruginea.com/${locale}/backyard/got-time-for-football/`
+					: `/${locale}/`;
+			window.location.replace(`${destination}${window.location.search}${window.location.hash}`);
 		</script>
 	</head>
 	<body>
