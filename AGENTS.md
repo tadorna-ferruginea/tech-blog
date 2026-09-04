@@ -25,6 +25,10 @@ Manage the background server with `astro dev stop`, `astro dev status`, and `ast
 
 ## Documentation
 
+## Publishing metadata
+
+- When publishing a Post, Note, or Backyard entry, set `publishDate` to the actual current time in `America/New_York`, including the correct UTC offset and minute precision. Verify the current time rather than using a date-only or midnight placeholder.
+
 Full documentation: https://docs.astro.build
 
 Consult these guides before working on related tasks:

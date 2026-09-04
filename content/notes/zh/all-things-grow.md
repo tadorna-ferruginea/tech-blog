@@ -1,7 +1,7 @@
 ---
 title: 万物生长
 description: 新学期的第一周，临界现象、沙之书和纽约的彩蛋。
-publishDate: "2026-09-04T00:00:00-04:00"
+publishDate: "2026-09-04T14:54:00-04:00"
 thumbnail:
   alt: 纽约街头一排停靠的 Citi Bike。
   src: /images/all-things-grow-2273.webp

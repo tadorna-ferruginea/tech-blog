@@ -1,7 +1,7 @@
 ---
 title: All Things Grow
 description: "The first week of a new semester: critical phenomena, The Book of Sand, and New York’s Easter eggs."
-publishDate: "2026-09-04T00:00:00-04:00"
+publishDate: "2026-09-04T14:54:00-04:00"
 thumbnail:
   alt: A line of docked Citi Bikes on a New York street.
   src: /images/all-things-grow-2273.webp
