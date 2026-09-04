@@ -306,6 +306,8 @@ const weatherLabels = isZh
 		let canBringBall = false;
 		let availabilityDrag: { pointerId: number; canBringBall: boolean; touched: Set<string> } | undefined;
 		let activityDrag: { pointerId: number; start: HTMLButtonElement; end: HTMLButtonElement } | undefined;
+		let pendingTouchDrag: { pointerId: number; slot: HTMLButtonElement; mode: "availability" | "decision"; clientX: number; clientY: number; timer: number } | undefined;
+		let activeTouchPointerId: number | undefined;
 		let suppressAvailabilityClickUntil = 0;
 		let suppressActivityClickUntil = 0;
 		let currentWeekStart = "";
@@ -959,6 +961,26 @@ const weatherLabels = isZh
 		slots.forEach((slot) => {
 			slot.addEventListener("pointerdown", (event) => {
 				if (!unlocked || (mode !== "availability" && mode !== "decision")) return;
+				if (event.pointerType === "touch") {
+					const touchMode = mode;
+					const timer = window.setTimeout(() => {
+						if (!pendingTouchDrag || pendingTouchDrag.pointerId !== event.pointerId) return;
+						pendingTouchDrag = undefined;
+						activeTouchPointerId = event.pointerId;
+						slot.setPointerCapture(event.pointerId);
+						if (touchMode === "decision") {
+							activityDrag = { pointerId: event.pointerId, start: slot, end: slot };
+							renderActivityRange(slot, slot);
+							return;
+						}
+						const availability = availabilityAtPoint(event.clientX, event.clientY);
+						if (!availability) return;
+						availabilityDrag = { pointerId: event.pointerId, canBringBall, touched: new Set() };
+						updateAvailability(availability.slot, availability.halfHour, availabilityDrag.canBringBall, availabilityDrag.touched);
+					}, 250);
+					pendingTouchDrag = { pointerId: event.pointerId, slot, mode: touchMode, clientX: event.clientX, clientY: event.clientY, timer };
+					return;
+				}
 				slot.setPointerCapture(event.pointerId);
 				if (mode === "decision") {
 					event.preventDefault();
@@ -991,6 +1013,13 @@ const weatherLabels = isZh
 			});
 		});
 		document.addEventListener("pointermove", (event) => {
+			if (pendingTouchDrag && event.pointerId === pendingTouchDrag.pointerId) {
+				if (Math.hypot(event.clientX - pendingTouchDrag.clientX, event.clientY - pendingTouchDrag.clientY) > 10) {
+					window.clearTimeout(pendingTouchDrag.timer);
+					pendingTouchDrag = undefined;
+				}
+				return;
+			}
 			if (availabilityDrag && event.pointerId === availabilityDrag.pointerId) {
 				const availability = availabilityAtPoint(event.clientX, event.clientY);
 				if (availability) updateAvailability(availability.slot, availability.halfHour, availabilityDrag.canBringBall, availabilityDrag.touched);
@@ -1005,29 +1034,45 @@ const weatherLabels = isZh
 			}
 		});
 		document.addEventListener("pointerup", (event) => {
+			if (pendingTouchDrag && event.pointerId === pendingTouchDrag.pointerId) {
+				window.clearTimeout(pendingTouchDrag.timer);
+				pendingTouchDrag = undefined;
+				return;
+			}
 			if (availabilityDrag && event.pointerId === availabilityDrag.pointerId) {
 				availabilityDrag = undefined;
+				activeTouchPointerId = undefined;
 				saveAvailability();
 				suppressAvailabilityClickUntil = performance.now() + 500;
 			}
 			if (activityDrag && event.pointerId === activityDrag.pointerId) {
 				const { start, end } = activityDrag;
 				activityDrag = undefined;
+				activeTouchPointerId = undefined;
 				renderActivityRange();
 				confirmActivity(start, end);
 				suppressActivityClickUntil = performance.now() + 500;
 			}
 		});
 		document.addEventListener("pointercancel", (event) => {
+			if (pendingTouchDrag && event.pointerId === pendingTouchDrag.pointerId) {
+				window.clearTimeout(pendingTouchDrag.timer);
+				pendingTouchDrag = undefined;
+			}
 			if (availabilityDrag && event.pointerId === availabilityDrag.pointerId) {
 				availabilityDrag = undefined;
+				activeTouchPointerId = undefined;
 				saveAvailability();
 			}
 			if (activityDrag && event.pointerId === activityDrag.pointerId) {
 				activityDrag = undefined;
+				activeTouchPointerId = undefined;
 				renderActivityRange();
 			}
 		});
+		scheduler.addEventListener("touchmove", (event) => {
+			if (activeTouchPointerId !== undefined) event.preventDefault();
+		}, { passive: false });
 		modeButtons.forEach((button) => {
 			button.addEventListener("click", () => setMode(button.dataset.mode as "availability" | "decision"));
 		});
@@ -1265,7 +1310,7 @@ const weatherLabels = isZh
 	.slot strong.empty { color: var(--color-muted); font-size: 1rem; font-weight: 400; }
 	.slot > :global(.ball) { display: none; position: absolute; z-index: 3; left: .44rem; right: auto; top: auto; bottom: .48rem; margin: 0; font-size: .62rem; line-height: 1; }
 	.availability-quarters { display: none; }
-	.scheduler[data-mode="availability"] .slot { min-height: 2.85rem; background: var(--color-global-bg) !important; cursor: cell; touch-action: none; }
+	.scheduler[data-mode="availability"] .slot { min-height: 2.85rem; background: var(--color-global-bg) !important; cursor: cell; }
 	.scheduler[data-mode="availability"] .slot:hover, .scheduler[data-mode="availability"] .slot:focus-visible { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-accent) 45%, transparent); }
 	.scheduler[data-mode="availability"] .slot > .temperature, .scheduler[data-mode="availability"] .slot > .weather-icons, .scheduler[data-mode="availability"] .slot > strong, .scheduler[data-mode="availability"] .slot > :global(.ball) { display: none; }
 	.scheduler[data-mode="availability"] .day-headings, .scheduler[data-mode="availability"] .hour-row { gap: 2px; }
@@ -1290,7 +1335,7 @@ const weatherLabels = isZh
 	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot.people-3 { background: color-mix(in oklab, var(--color-global-bg) 78%, var(--attendance-colour)); }
 	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot.people-4 { background: color-mix(in oklab, var(--color-global-bg) 68%, var(--attendance-colour)); }
 	.scheduler.is-unlocked[data-colour-mode="attendance"] .slot.people-5 { background: color-mix(in oklab, var(--color-global-bg) 56%, var(--attendance-colour)); }
-	.scheduler[data-mode="decision"] .slot { cursor: crosshair; touch-action: none; }
+	.scheduler[data-mode="decision"] .slot { cursor: crosshair; }
 	.scheduler[data-mode="decision"] .slot.is-activity-range { box-shadow: inset 0 0 0 2px var(--color-accent-2); z-index: 1; }
 	.scheduler-legend { display: flex; flex-wrap: wrap; gap: .45rem 1rem; margin-top: .85rem; color: var(--color-muted); font-size: .6875rem; }
 	.scheduler-legend span { display: inline-flex; align-items: center; gap: .25rem; white-space: nowrap; }
