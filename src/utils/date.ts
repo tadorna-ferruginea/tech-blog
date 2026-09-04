@@ -10,6 +10,7 @@ export function getFormattedDate(
 	}
 
 	return new Intl.DateTimeFormat(siteConfig.lang, {
+		timeZone: "America/New_York",
 		...(siteConfig.date.options as Intl.DateTimeFormatOptions),
 		...options,
 	}).format(date);
