@@ -321,7 +321,7 @@ const weatherLabels = isZh
 		let activeTouchPointerId: number | undefined;
 		let suppressAvailabilityClickUntil = 0;
 		let suppressActivityClickUntil = 0;
-		let currentWeekStart = "";
+		let currentWindowStart = "";
 		let temperatureSwitches = 0;
 		let previousTemperatureUnit = "celsius";
 		let kelvinUnlocked = false;
@@ -345,8 +345,8 @@ const weatherLabels = isZh
 			}
 		});
 		const availabilityKey = (slot: HTMLButtonElement, quarter: number) => `${slot.dataset.dayIndex}:${slot.dataset.hourIndex}:${quarter}`;
-		const dateForSlot = (slot: HTMLButtonElement, weekStart = currentWeekStart) => {
-			const date = new Date(`${weekStart}T12:00:00Z`);
+		const dateForSlot = (slot: HTMLButtonElement, windowStart = currentWindowStart) => {
+			const date = new Date(`${windowStart}T12:00:00Z`);
 			date.setUTCDate(date.getUTCDate() + Number(slot.dataset.dayIndex));
 			return date.toISOString().slice(0, 10);
 		};
@@ -404,10 +404,10 @@ const weatherLabels = isZh
 			try {
 				const response = await fetch(`${apiBase}/api/pickup/v1/schedule`, { credentials: "include" });
 				if (!response.ok) throw new Error("Schedule request failed");
-				const schedule = await response.json() as { authenticated?: boolean; me?: string; weekStart?: string; summary?: { date: string; startMinute: number; people: number; balls: number }[]; mine?: { date: string; startMinute: number; bringsBall: number }[] };
-				if (!schedule.authenticated || !schedule.weekStart || !schedule.me) return;
+				const schedule = await response.json() as { authenticated?: boolean; me?: string; windowStart?: string; summary?: { date: string; startMinute: number; people: number; balls: number }[]; mine?: { date: string; startMinute: number; bringsBall: number }[] };
+				if (!schedule.authenticated || !schedule.windowStart || !schedule.me) return;
 				currentName = schedule.me;
-				currentWeekStart = schedule.weekStart;
+				currentWindowStart = schedule.windowStart;
 				slots.forEach((slot) => { slot.dataset.isoDate = dateForSlot(slot); });
 				applyAttendanceSummary(schedule.summary ?? []);
 				myAvailability.clear();
@@ -427,7 +427,7 @@ const weatherLabels = isZh
 		};
 		const saveAvailability = async () => {
 			const apiBase = scheduler.dataset.apiBase;
-			if (!apiBase || !currentWeekStart) return;
+			if (!apiBase || !currentWindowStart) return;
 			const entries = [...slots].flatMap((slot) => [0, 1].flatMap((halfHour) => {
 				const key = availabilityKey(slot, halfHour);
 				return myAvailability.has(key) ? [{ date: slot.dataset.isoDate, startMinute: minuteForSlot(slot, halfHour), bringsBall: ballAvailability.has(key) }] : [];
@@ -435,7 +435,7 @@ const weatherLabels = isZh
 			try {
 				const response = await fetch(`${apiBase}/api/pickup/v1/availability`, {
 					method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ weekStart: currentWeekStart, entries }),
+					body: JSON.stringify({ entries }),
 				});
 				if (!response.ok) throw new Error("Availability save failed");
 				await loadAvailability();
@@ -528,6 +528,17 @@ const weatherLabels = isZh
 			const to = Math.max(Number(start.dataset.hourIndex), Number(end.dataset.hourIndex));
 			return [...slots].filter((slot) => slot.dataset.dayIndex === start.dataset.dayIndex && Number(slot.dataset.hourIndex) >= from && Number(slot.dataset.hourIndex) <= to);
 		};
+		const newYorkClock = () => {
+			const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts();
+			const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((item) => item.type === type)?.value);
+			return { date: `${String(part("year")).padStart(4, "0")}-${String(part("month")).padStart(2, "0")}-${String(part("day")).padStart(2, "0")}`, minute: part("hour") * 60 + part("minute") };
+		};
+		const hasActivityEnded = (activity: ConfirmedSlot) => {
+			const now = newYorkClock();
+			const [hour, minute] = activity.end.split(":").map(Number);
+			const endMinute = hour * 60 + minute;
+			return activity.date < now.date || (activity.date === now.date && endMinute <= now.minute);
+		};
 		const renderActivityRange = (start?: HTMLButtonElement, end?: HTMLButtonElement) => {
 			const selected = start && end ? new Set(activityRange(start, end)) : new Set<HTMLButtonElement>();
 			slots.forEach((slot) => slot.classList.toggle("is-activity-range", selected.has(slot)));
@@ -587,9 +598,9 @@ const weatherLabels = isZh
 		};
 		const loadComments = async () => {
 			const apiBase = scheduler.dataset.apiBase;
-			if (!apiBase || !currentWeekStart) return;
+			if (!apiBase) return;
 			try {
-				const response = await fetch(`${apiBase}/api/pickup/v1/comments?week=${encodeURIComponent(currentWeekStart)}`, { credentials: "include" });
+				const response = await fetch(`${apiBase}/api/pickup/v1/comments`, { credentials: "include" });
 				if (!response.ok) throw new Error("Comments request failed");
 				const result = await response.json() as { comments?: Comment[] };
 				comments = result.comments ?? [];
@@ -710,11 +721,7 @@ const weatherLabels = isZh
 
 		const renderConfirmed = () => {
 			confirmedList.replaceChildren();
-			const activeConfirmed = confirmedSlots.filter((confirmed) => {
-				if (!confirmed.date) return true;
-				const endsAt = new Date(`${confirmed.date}T${confirmed.end}:00`).getTime();
-				return endsAt > Date.now();
-			});
+			const activeConfirmed = confirmedSlots.filter((confirmed) => !hasActivityEnded(confirmed));
 			if (activeConfirmed.length !== confirmedSlots.length) {
 				confirmedSlots.splice(0, confirmedSlots.length, ...activeConfirmed);
 			}
@@ -802,6 +809,7 @@ const weatherLabels = isZh
 				confirmedList.append(item);
 			});
 		};
+		window.setInterval(renderConfirmed, 30_000);
 
 		const unlock = async (name: string, rememberSession: boolean) => {
 			unlocked = true;
@@ -830,13 +838,13 @@ const weatherLabels = isZh
 			try {
 				const response = await fetch(`${apiBase}/api/pickup/v1/schedule`, { credentials: "include" });
 				if (!response.ok) throw new Error("Weather request failed");
-				const schedule = await response.json() as { weekStart?: string; weather?: { date: string; hour: number; temperatureC: number; weatherCode: number }[]; sunset?: string | null; authenticated?: boolean; me?: string; summary?: { date: string; startMinute: number; people: number; balls: number }[] };
-				if (!schedule.weekStart || !schedule.weather) throw new Error("Weather response was incomplete");
-				currentWeekStart = schedule.weekStart;
-				const monday = new Date(`${schedule.weekStart}T12:00:00Z`);
+				const schedule = await response.json() as { windowStart?: string; weather?: { date: string; hour: number; temperatureC: number; weatherCode: number }[]; sunset?: string | null; authenticated?: boolean; me?: string; summary?: { date: string; startMinute: number; people: number; balls: number }[] };
+				if (!schedule.windowStart || !schedule.weather) throw new Error("Weather response was incomplete");
+				currentWindowStart = schedule.windowStart;
+				const windowStart = new Date(`${schedule.windowStart}T12:00:00Z`);
 				const dates = Array.from({ length: 7 }, (_, index) => {
-					const date = new Date(monday);
-					date.setUTCDate(monday.getUTCDate() + index);
+					const date = new Date(windowStart);
+					date.setUTCDate(windowStart.getUTCDate() + index);
 					return date.toISOString().slice(0, 10);
 				});
 				if (schedule.authenticated) applyAttendanceSummary(schedule.summary ?? []);
@@ -926,11 +934,10 @@ const weatherLabels = isZh
 			slot.setAttribute("aria-expanded", "true");
 			positionPopover(participantsPopover, anchor);
 			const apiBase = scheduler.dataset.apiBase;
-			if (!apiBase || !currentWeekStart || !slot.dataset.isoDate) return;
+			if (!apiBase || !currentWindowStart || !slot.dataset.isoDate) return;
 			try {
 				const results = await Promise.all([0, 1].map(async (halfHour) => {
 					const url = new URL(`${apiBase}/api/pickup/v1/participants`);
-					url.searchParams.set("week", currentWeekStart);
 					url.searchParams.set("date", slot.dataset.isoDate!);
 					url.searchParams.set("startMinute", String(minuteForSlot(slot, halfHour)));
 					const response = await fetch(url, { credentials: "include" });
@@ -999,9 +1006,9 @@ const weatherLabels = isZh
 			const slot = range[0]!;
 			const finalSlot = range.at(-1)!;
 			const apiBase = scheduler.dataset.apiBase;
-			if (!apiBase || !currentWeekStart || !slot.dataset.isoDate) return;
+			if (!apiBase || !currentWindowStart || !slot.dataset.isoDate) return;
 			try {
-				const response = await fetch(`${apiBase}/api/pickup/v1/activities`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weekStart: currentWeekStart, date: slot.dataset.isoDate, startMinute: minuteForSlot(slot), endMinute: minuteForSlot(finalSlot) + 60, description: "" }) });
+				const response = await fetch(`${apiBase}/api/pickup/v1/activities`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date: slot.dataset.isoDate, startMinute: minuteForSlot(slot), endMinute: minuteForSlot(finalSlot) + 60, description: "" }) });
 				if (!response.ok) throw new Error("Activity publish failed");
 				await loadConfirmed();
 				confirmedPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -1243,10 +1250,10 @@ const weatherLabels = isZh
 				return;
 			}
 			const apiBase = scheduler.dataset.apiBase;
-			if (!apiBase || !currentWeekStart) return;
+			if (!apiBase) return;
 			const response = editingCommentId
 				? await fetch(`${apiBase}/api/pickup/v1/comments/${encodeURIComponent(editingCommentId)}`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body }) })
-				: await fetch(`${apiBase}/api/pickup/v1/comments`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weekStart: currentWeekStart, body, ...(replyingToId && replyingUnderId ? { parentId: replyingUnderId, replyToId: replyingToId } : {}) }) });
+				: await fetch(`${apiBase}/api/pickup/v1/comments`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body, ...(replyingToId && replyingUnderId ? { parentId: replyingUnderId, replyToId: replyingToId } : {}) }) });
 			if (!response.ok) return;
 			resetCommentEditor();
 			await loadComments();

@@ -110,11 +110,9 @@ const addDays = (date: string, days: number) => {
 	return dateOnly(value);
 };
 
-const currentWeekStart = () => {
-	return newYorkToday();
-};
+const currentWindowStart = () => newYorkToday();
 
-const isDateInWeek = (date: string, weekStart: string) => /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= weekStart && date <= addDays(weekStart, 6);
+const isDateInWindow = (date: string, windowStart: string) => /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= windowStart && date <= addDays(windowStart, 6);
 const hasActivityEnded = (activity: Pick<ActivityRow, "date" | "endMinute">) => {
 	const now = newYorkClock();
 	return activity.date < now.date || (activity.date === now.date && activity.endMinute <= now.minute);
@@ -141,10 +139,10 @@ const requireSession = async (request: Request, env: Env) => {
 	return session;
 };
 
-const weatherRows = async (env: Env, weekStart: string) => {
+const weatherRows = async (env: Env, windowStart: string) => {
 	const rows = (await env.DB.prepare(
 		"SELECT date, hour, temperature_c AS temperatureC, weather_code AS weatherCode, fetched_at AS fetchedAt FROM weather_hour WHERE date BETWEEN ?1 AND ?2 ORDER BY date, hour",
-	).bind(weekStart, addDays(weekStart, 6)).all<{ date: string; hour: number; temperatureC: number; weatherCode: number; fetchedAt: string }>()).results;
+	).bind(windowStart, addDays(windowStart, 6)).all<{ date: string; hour: number; temperatureC: number; weatherCode: number; fetchedAt: string }>()).results;
 	return rows;
 };
 
@@ -174,7 +172,7 @@ const refreshWeather = async (env: Env) => {
 	if (sunset) statements.push(env.DB.prepare(
 		"INSERT INTO weather_day (date, sunset, fetched_at) VALUES (?1, ?2, ?3) ON CONFLICT(date) DO UPDATE SET sunset = excluded.sunset, fetched_at = excluded.fetched_at",
 	).bind(today, sunset.slice(11, 16), fetchedAt));
-	statements.push(env.DB.prepare("DELETE FROM weather_hour WHERE date < ?1").bind(addDays(currentWeekStart(), -7)));
+	statements.push(env.DB.prepare("DELETE FROM weather_hour WHERE date < ?1").bind(addDays(currentWindowStart(), -7)));
 	statements.push(env.DB.prepare("DELETE FROM weather_day WHERE date <> ?1").bind(today));
 	if (statements.length > 0) await env.DB.batch(statements);
 };
@@ -182,81 +180,81 @@ const refreshWeather = async (env: Env) => {
 const pruneExpiredActivities = async (env: Env) => {
 	const activities = await env.DB.prepare("SELECT id, date, end_minute AS endMinute FROM activities").all<Pick<ActivityRow, "id" | "date" | "endMinute">>();
 	const expired = activities.results.filter(hasActivityEnded);
-	if (expired.length > 0) await env.DB.batch(expired.flatMap((activity) => [
-		env.DB.prepare("DELETE FROM activity_rsvps WHERE activity_id = ?1").bind(activity.id),
-		env.DB.prepare("DELETE FROM activities WHERE id = ?1").bind(activity.id),
-	]));
+	if (expired.length > 0) {
+		console.info("Pruning expired activities", { count: expired.length });
+		await env.DB.batch(expired.flatMap((activity) => [
+			env.DB.prepare("DELETE FROM activity_rsvps WHERE activity_id = ?1").bind(activity.id),
+			env.DB.prepare("DELETE FROM activities WHERE id = ?1").bind(activity.id),
+		]));
+	}
 };
 
-const schedule = async (request: Request, env: Env, url: URL, ctx: ExecutionContext) => {
-	const weekStart = url.searchParams.get("week") ?? currentWeekStart();
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) throw new HttpError(400, "Invalid week.");
-	let weather = await weatherRows(env, weekStart);
+const schedule = async (request: Request, env: Env, _url: URL, ctx: ExecutionContext) => {
+	const windowStart = currentWindowStart();
+	let weather = await weatherRows(env, windowStart);
 	let sunset = await sunsetToday(env, newYorkToday());
 	if (weather.length === 0 || !sunset) {
 		await refreshWeather(env);
-		weather = await weatherRows(env, weekStart);
+		weather = await weatherRows(env, windowStart);
 		sunset = await sunsetToday(env, newYorkToday());
 	}
 	const session = await readSession(request, env);
-	if (!session) return json(request, env, { weekStart, weather, sunset: sunset?.sunset ?? null, authenticated: false });
+	if (!session) return json(request, env, { windowStart, weekStart: windowStart, weather, sunset: sunset?.sunset ?? null, authenticated: false });
 	const [summary, mine, activities] = await Promise.all([
-		env.DB.prepare("SELECT date, start_minute AS startMinute, COUNT(*) AS people, SUM(brings_ball) AS balls FROM availability WHERE week_start = ?1 GROUP BY date, start_minute").bind(weekStart).all(),
-		env.DB.prepare("SELECT date, start_minute AS startMinute, brings_ball AS bringsBall FROM availability WHERE week_start = ?1 AND person_name = ?2 ORDER BY date, start_minute").bind(weekStart, session.name).all(),
-		env.DB.prepare("SELECT a.id, a.date, a.start_minute AS startMinute, a.end_minute AS endMinute, a.description, a.created_by AS createdBy, a.created_at AS createdAt, COUNT(r.person_name) AS going, COALESCE(SUM(r.brings_ball), 0) AS balls, MAX(CASE WHEN r.person_name = ?2 THEN r.brings_ball END) AS myBringsBall FROM activities a LEFT JOIN activity_rsvps r ON r.activity_id = a.id WHERE a.week_start = ?1 GROUP BY a.id ORDER BY a.date, a.start_minute").bind(weekStart, session.name).all<ActivityRow>(),
+		env.DB.prepare("SELECT date, start_minute AS startMinute, COUNT(*) AS people, SUM(brings_ball) AS balls FROM availability WHERE date BETWEEN ?1 AND ?2 GROUP BY date, start_minute").bind(windowStart, addDays(windowStart, 6)).all(),
+		env.DB.prepare("SELECT date, start_minute AS startMinute, brings_ball AS bringsBall FROM availability WHERE date BETWEEN ?1 AND ?2 AND person_name = ?3 ORDER BY date, start_minute").bind(windowStart, addDays(windowStart, 6), session.name).all(),
+		env.DB.prepare("SELECT a.id, a.date, a.start_minute AS startMinute, a.end_minute AS endMinute, a.description, a.created_by AS createdBy, a.created_at AS createdAt, COUNT(r.person_name) AS going, COALESCE(SUM(r.brings_ball), 0) AS balls, MAX(CASE WHEN r.person_name = ?3 THEN r.brings_ball END) AS myBringsBall FROM activities a LEFT JOIN activity_rsvps r ON r.activity_id = a.id WHERE a.date BETWEEN ?1 AND ?2 GROUP BY a.id ORDER BY a.date, a.start_minute").bind(windowStart, addDays(windowStart, 6), session.name).all<ActivityRow>(),
 	]);
 	ctx.waitUntil(Promise.all([
 		env.DB.prepare("DELETE FROM comments WHERE expires_at <= ?1").bind(new Date().toISOString()).run(),
 		pruneExpiredActivities(env),
 	]));
-	return json(request, env, { weekStart, weather, sunset: sunset?.sunset ?? null, authenticated: true, me: session.name, summary: summary.results, mine: mine.results, activities: activities.results.filter((activity) => !hasActivityEnded(activity)) });
+	return json(request, env, { windowStart, weekStart: windowStart, weather, sunset: sunset?.sunset ?? null, authenticated: true, me: session.name, summary: summary.results, mine: mine.results, activities: activities.results.filter((activity) => !hasActivityEnded(activity)) });
 };
 
 const replaceAvailability = async (request: Request, env: Env) => {
 	const session = await requireSession(request, env);
 	const body = await readJson(request);
-	const weekStart = typeof body.weekStart === "string" ? body.weekStart : "";
 	const entries = body.entries;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart) || !Array.isArray(entries) || entries.length > 112) throw new HttpError(400, "Invalid availability.");
+	const windowStart = currentWindowStart();
+	if (!Array.isArray(entries) || entries.length > 112) throw new HttpError(400, "Invalid availability.");
 	const unique = new Set<string>();
 	const validEntries = entries.map((entry) => {
-		if (!isRecord(entry) || typeof entry.date !== "string" || !isDateInWeek(entry.date, weekStart) || !validSlot(entry.startMinute) || typeof entry.bringsBall !== "boolean") throw new HttpError(400, "Invalid availability entry.");
+		if (!isRecord(entry) || typeof entry.date !== "string" || !isDateInWindow(entry.date, windowStart) || !validSlot(entry.startMinute) || typeof entry.bringsBall !== "boolean") throw new HttpError(400, "Invalid availability entry.");
 		const key = `${entry.date}:${entry.startMinute}`;
 		if (unique.has(key)) throw new HttpError(400, "Duplicate availability entry.");
 		unique.add(key);
 		return { date: entry.date, startMinute: entry.startMinute, bringsBall: entry.bringsBall };
 	});
-	const statements = [env.DB.prepare("DELETE FROM availability WHERE week_start = ?1 AND person_name = ?2").bind(weekStart, session.name)];
+	const statements = [env.DB.prepare("DELETE FROM availability WHERE person_name = ?1 AND date BETWEEN ?2 AND ?3").bind(session.name, windowStart, addDays(windowStart, 6))];
 	validEntries.forEach((entry) => statements.push(env.DB.prepare(
-		"INSERT INTO availability (week_start, person_name, date, start_minute, brings_ball) VALUES (?1, ?2, ?3, ?4, ?5)",
-	).bind(weekStart, session.name, entry.date, entry.startMinute, Number(entry.bringsBall))));
+		"INSERT INTO availability (person_name, date, start_minute, brings_ball) VALUES (?1, ?2, ?3, ?4)",
+	).bind(session.name, entry.date, entry.startMinute, Number(entry.bringsBall))));
 	await env.DB.batch(statements);
 	return json(request, env, { ok: true });
 };
 
 const participants = async (request: Request, env: Env, url: URL) => {
 	const session = await requireSession(request, env);
-	const weekStart = url.searchParams.get("week") ?? currentWeekStart();
 	const date = url.searchParams.get("date") ?? "";
 	const startMinute = Number(url.searchParams.get("startMinute"));
-	if (!isDateInWeek(date, weekStart) || !validSlot(startMinute)) throw new HttpError(400, "Invalid slot.");
-	const people = await env.DB.prepare("SELECT person_name AS name, brings_ball AS bringsBall FROM availability WHERE week_start = ?1 AND date = ?2 AND start_minute = ?3 ORDER BY person_name").bind(weekStart, date, startMinute).all();
+	if (!isDateInWindow(date, currentWindowStart()) || !validSlot(startMinute)) throw new HttpError(400, "Invalid slot.");
+	const people = await env.DB.prepare("SELECT person_name AS name, brings_ball AS bringsBall FROM availability WHERE date = ?1 AND start_minute = ?2 ORDER BY person_name").bind(date, startMinute).all();
 	return json(request, env, { me: session.name, people: people.results });
 };
 
 const createActivity = async (request: Request, env: Env) => {
 	const session = await requireSession(request, env);
 	const body = await readJson(request);
-	const weekStart = typeof body.weekStart === "string" ? body.weekStart : "";
 	const date = typeof body.date === "string" ? body.date : "";
 	const startMinute = body.startMinute;
 	const endMinute = body.endMinute;
 	const description = typeof body.description === "string" ? body.description.trim() : "";
-	if (!isDateInWeek(date, weekStart) || !validActivityStart(startMinute) || !validActivityEnd(endMinute) || description.length > 500) throw new HttpError(400, "Invalid activity.");
+	if (!isDateInWindow(date, currentWindowStart()) || !validActivityStart(startMinute) || !validActivityEnd(endMinute) || description.length > 500) throw new HttpError(400, "Invalid activity.");
 	if (endMinute <= startMinute) throw new HttpError(400, "Invalid activity.");
 	const id = crypto.randomUUID();
 	try {
-		await env.DB.prepare("INSERT INTO activities (id, week_start, date, start_minute, end_minute, description, created_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)").bind(id, weekStart, date, startMinute, endMinute, description, session.name).run();
+		await env.DB.prepare("INSERT INTO activities (id, date, start_minute, end_minute, description, created_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(id, date, startMinute, endMinute, description, session.name).run();
 	} catch (error) {
 		if (error instanceof Error && /UNIQUE constraint failed/.test(error.message)) throw new HttpError(409, "An activity already starts within this half-hour.");
 		throw error;
@@ -272,8 +270,8 @@ const updateActivity = async (request: Request, env: Env, id: string) => {
 	const description = typeof body.description === "string" ? body.description.trim() : "";
 	if (!validActivityStart(startMinute) || !validActivityEnd(endMinute) || description.length > 500) throw new HttpError(400, "Invalid activity.");
 	if (endMinute <= startMinute) throw new HttpError(400, "Invalid activity.");
-	const activity = await env.DB.prepare("SELECT date FROM activities WHERE id = ?1 AND created_by = ?2").bind(id, session.name).first<{ date: string }>();
-	if (!activity) throw new HttpError(404, "Activity not found.");
+	const activity = await env.DB.prepare("SELECT date, end_minute AS endMinute FROM activities WHERE id = ?1 AND created_by = ?2").bind(id, session.name).first<Pick<ActivityRow, "date" | "endMinute">>();
+	if (!activity || hasActivityEnded(activity)) throw new HttpError(404, "Activity not found.");
 	try {
 		await env.DB.prepare("UPDATE activities SET start_minute = ?1, end_minute = ?2, description = ?3 WHERE id = ?4").bind(startMinute, endMinute, description, id).run();
 	} catch (error) {
@@ -318,30 +316,27 @@ const activityRsvps = async (request: Request, env: Env, id: string) => {
 	return json(request, env, { people: people.results });
 };
 
-const comments = async (request: Request, env: Env, url: URL) => {
+const comments = async (request: Request, env: Env) => {
 	await requireSession(request, env);
-	const weekStart = url.searchParams.get("week") ?? currentWeekStart();
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) throw new HttpError(400, "Invalid week.");
-	const rows = await env.DB.prepare("SELECT comments.id, comments.parent_id AS parentId, comments.reply_to_id AS replyToId, reply_target.author AS replyToAuthor, reply_target.body AS replyToBody, comments.author, comments.body, comments.created_at AS createdAt, comments.updated_at AS updatedAt FROM comments LEFT JOIN comments AS reply_target ON reply_target.id = comments.reply_to_id WHERE comments.week_start = ?1 AND comments.expires_at > ?2 ORDER BY comments.created_at DESC").bind(weekStart, new Date().toISOString()).all();
+	const rows = await env.DB.prepare("SELECT comments.id, comments.parent_id AS parentId, comments.reply_to_id AS replyToId, reply_target.author AS replyToAuthor, reply_target.body AS replyToBody, comments.author, comments.body, comments.created_at AS createdAt, comments.updated_at AS updatedAt FROM comments LEFT JOIN comments AS reply_target ON reply_target.id = comments.reply_to_id WHERE comments.expires_at > ?1 ORDER BY comments.created_at DESC").bind(new Date().toISOString()).all();
 	return json(request, env, { comments: rows.results });
 };
 
 const createComment = async (request: Request, env: Env) => {
 	const session = await requireSession(request, env);
 	const body = await readJson(request);
-	const weekStart = typeof body.weekStart === "string" ? body.weekStart : "";
 	const comment = typeof body.body === "string" ? body.body.trim() : "";
 	const parentId = typeof body.parentId === "string" ? body.parentId : undefined;
 	const replyToId = typeof body.replyToId === "string" ? body.replyToId : undefined;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart) || !comment || comment.length > 1000) throw new HttpError(400, "Invalid comment.");
+	if (!comment || comment.length > 1000) throw new HttpError(400, "Invalid comment.");
 	if (parentId || replyToId) {
 		if (!parentId || !replyToId) throw new HttpError(400, "Invalid reply target.");
-		const parent = await env.DB.prepare("SELECT id, parent_id AS parentId FROM comments WHERE id = ?1 AND week_start = ?2 AND expires_at > ?3").bind(parentId, weekStart, new Date().toISOString()).first<{ id: string; parentId: string | null }>();
-		const replyTarget = await env.DB.prepare("SELECT id, parent_id AS parentId FROM comments WHERE id = ?1 AND week_start = ?2 AND expires_at > ?3").bind(replyToId, weekStart, new Date().toISOString()).first<{ id: string; parentId: string | null }>();
+		const parent = await env.DB.prepare("SELECT id, parent_id AS parentId FROM comments WHERE id = ?1 AND expires_at > ?2").bind(parentId, new Date().toISOString()).first<{ id: string; parentId: string | null }>();
+		const replyTarget = await env.DB.prepare("SELECT id, parent_id AS parentId FROM comments WHERE id = ?1 AND expires_at > ?2").bind(replyToId, new Date().toISOString()).first<{ id: string; parentId: string | null }>();
 		if (!parent || parent.parentId || !replyTarget || (replyTarget.id !== parentId && replyTarget.parentId !== parentId)) throw new HttpError(400, "Invalid reply target.");
 	}
 	const id = crypto.randomUUID();
-	await env.DB.prepare("INSERT INTO comments (id, parent_id, reply_to_id, week_start, author, body, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)").bind(id, parentId ?? null, replyToId ?? null, weekStart, session.name, comment, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()).run();
+	await env.DB.prepare("INSERT INTO comments (id, parent_id, reply_to_id, author, body, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)").bind(id, parentId ?? null, replyToId ?? null, session.name, comment, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()).run();
 	return json(request, env, { id }, { status: 201 });
 };
 
@@ -391,7 +386,7 @@ const handle = async (request: Request, env: Env, ctx: ExecutionContext) => {
 	if (url.pathname === `${API}/availability` && request.method === "PUT") return replaceAvailability(request, env);
 	if (url.pathname === `${API}/participants` && request.method === "GET") return participants(request, env, url);
 	if (url.pathname === `${API}/activities` && request.method === "POST") return createActivity(request, env);
-	if (url.pathname === `${API}/comments` && request.method === "GET") return comments(request, env, url);
+	if (url.pathname === `${API}/comments` && request.method === "GET") return comments(request, env);
 	if (url.pathname === `${API}/comments` && request.method === "POST") return createComment(request, env);
 	const activityRsvp = url.pathname.match(new RegExp(`^${API}/activities/([0-9a-f-]{36})/rsvp$`));
 	if (activityRsvp && request.method === "GET") return activityRsvps(request, env, activityRsvp[1]!);

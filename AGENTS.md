@@ -181,9 +181,9 @@ content inside a Post or Backyard content page, not a reason to redesign the sur
 - Put time labels on the boundaries between rows rather than consuming a dedicated left column;
   include the final end-time label so the displayed range is closed.
 - The default window is the next seven New York calendar days, 12:00–20:00, at half-hour selection resolution; emphasize Saturday and Sunday only in their column headings.
-  It advances by one day at New York midnight. Store availability by window start, person, date,
-  and half-hour; a ball is a property of a person's individual selected half-hour, not a global
-  toggle.
+  It advances by one day at New York midnight. Store availability by absolute date, person, and
+  half-hour; a ball is a property of a person's individual selected half-hour, not a global toggle.
+  A display window is only a query range, never part of a persisted record's identity.
 - Use colour primarily to show aggregate attendance density. Keep temperature and the provider's
   weather condition legible as text/icon facts, not as a recommendation about whether an activity
   should happen. In personal-selection mode, use the site's red daytime / green dark-mode accents
