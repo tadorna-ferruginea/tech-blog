@@ -63,6 +63,8 @@ const previewWords = locale === "en" ? previewText.split(/\s+/) : [];
 			/>
 			<div
 				class="note-content prose reading-prose prose-cactus font-prose mt-4 max-w-none [&>p:last-of-type]:mb-0"
+				data-note-image-viewer={!isPreview ? true : undefined}
+				data-note-image-zoom-label={locale === "en" ? "View larger image" : "查看大图"}
 				class:list={{
 					"[&>blockquote:first-child]:hidden": isPreview && hasTranslationNotice,
 				}}
@@ -90,4 +92,69 @@ const previewWords = locale === "en" ? previewText.split(/\s+/) : [];
 			)
 		}
 	</div>
+	{
+		!isPreview && (
+			<dialog class="note-lightbox" data-note-lightbox>
+				<div class="note-lightbox-content" data-note-lightbox-content>
+					<button class="note-lightbox-close" data-note-lightbox-close type="button">
+						{locale === "en" ? "Close" : "关闭"}
+					</button>
+					<img class="note-lightbox-image" data-note-lightbox-image alt="" />
+					<p class="note-lightbox-caption" data-note-lightbox-caption></p>
+				</div>
+			</dialog>
+		)
+	}
 </article>
+
+{
+	!isPreview && (
+		<script>
+			document.querySelectorAll("[data-note-image-viewer]").forEach((content) => {
+				const article = content.closest("article");
+				const dialog = article?.querySelector("[data-note-lightbox]");
+				const lightboxContent = dialog?.querySelector("[data-note-lightbox-content]");
+				const lightboxImage = dialog?.querySelector("[data-note-lightbox-image]");
+				const caption = dialog?.querySelector("[data-note-lightbox-caption]");
+				const closeButton = dialog?.querySelector("[data-note-lightbox-close]");
+
+				if (!(dialog instanceof HTMLDialogElement) || !(lightboxImage instanceof HTMLImageElement)) return;
+
+				const zoomLabel = content.getAttribute("data-note-image-zoom-label") ?? "View larger image";
+				const showImage = (image: HTMLImageElement) => {
+					lightboxImage.src = image.currentSrc || image.src;
+					lightboxImage.alt = image.alt;
+					if (caption) caption.textContent = image.alt;
+					dialog.showModal();
+					if (closeButton instanceof HTMLElement) closeButton.focus();
+				};
+
+				content.querySelectorAll("img").forEach((image) => {
+					image.tabIndex = 0;
+					image.setAttribute("role", "button");
+					image.setAttribute("aria-haspopup", "dialog");
+					image.setAttribute("aria-label", image.alt ? `${image.alt}: ${zoomLabel}` : zoomLabel);
+					image.addEventListener("click", () => showImage(image));
+					image.addEventListener("keydown", (event) => {
+						if (event.key === "Enter" || event.key === " ") {
+							event.preventDefault();
+							showImage(image);
+						}
+					});
+				});
+
+				closeButton?.addEventListener("click", () => dialog.close());
+				dialog.addEventListener("click", (event) => {
+					if (!(lightboxContent instanceof HTMLElement)) return;
+					const bounds = lightboxContent.getBoundingClientRect();
+					if (
+						event.clientX < bounds.left ||
+						event.clientX > bounds.right ||
+						event.clientY < bounds.top ||
+						event.clientY > bounds.bottom
+					) dialog.close();
+				});
+			});
+		</script>
+	)
+}

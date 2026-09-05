@@ -151,6 +151,57 @@
 		height: auto;
 	}
 
+	.note-content img[role="button"] {
+		cursor: zoom-in;
+	}
+
+	.note-lightbox {
+		width: min(92vw, 72rem);
+		max-width: none;
+		max-height: 92dvh;
+		margin: auto;
+		padding: 0;
+		border: 1px solid var(--color-global-text);
+		background: var(--color-global-bg);
+		color: var(--color-global-text);
+	}
+
+	.note-lightbox::backdrop {
+		background: rgb(0 0 0 / 0.7);
+	}
+
+	.note-lightbox-content {
+		display: grid;
+		gap: 0.75rem;
+		max-height: 92dvh;
+		padding: 0.75rem;
+	}
+
+	.note-lightbox-close {
+		justify-self: end;
+		padding: 0.25rem 0.55rem;
+		border: 1px solid currentColor;
+		border-radius: 0.25rem;
+		background: transparent;
+		color: inherit;
+		cursor: pointer;
+	}
+
+	.note-lightbox-image {
+		width: auto;
+		max-width: 100%;
+		height: auto;
+		max-height: calc(92dvh - 6rem);
+		margin: auto;
+	}
+
+	.note-lightbox-caption {
+		margin: 0;
+		font-size: 0.875rem;
+		line-height: 1.45;
+		color: var(--color-muted);
+	}
+
 	.note-preview .note-content img {
 		display: none;
 	}
