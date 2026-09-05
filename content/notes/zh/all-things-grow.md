@@ -4,18 +4,18 @@ description: 新学期的第一周，临界现象、沙之书和纽约的彩蛋�
 publishDate: "2026-09-04T14:54:00-04:00"
 thumbnail:
   alt: 纽约街头一排停靠的 Citi Bike。
-  src: /images/all-things-grow-2273.webp
+  src: https://image.tadorna-ferruginea.com/all-things-grow-2273.webp
 ---
 
 新学期开始一周了，学校变得非常热闹而有生气，让我稍微有点不适应。周三的时候帮忙去额外 TA 了一节天文学的实验课，Charles Liu 老师确实是我见过最可亲、最热心又最擅长于教学的老师了，甚至没法加上“之一”。
 
-<img alt="纽约街头一排停靠的 Citi Bike。" class="note-image" loading="lazy" src="/images/all-things-grow-2273.webp" />
+<img alt="纽约街头一排停靠的 Citi Bike。" class="note-image" loading="lazy" src="https://image.tadorna-ferruginea.com/all-things-grow-2273.webp" />
 
 周四去上我自己的复杂网络课，发现算上我只有两个学生，于是课程就在小教室里以一种很密切的方式展开。大概被第若干次简要地介绍了从临界现象到自组织的一大类以幂律为特征的物理现象。非常惭愧地说，我在此之前并没有对临界点的物态和幂律带来的长程关联有一个形象的理解。或许随着这门课程的展开，我们能够对很多统计物理教材中被冷落的皇冠（临界现象）和之后的漂亮花边（逾渗理论）有一些更具体的理解，希望能多 post 几篇。
 
 这门课的老师是阿根廷人，PhD 时候的工作是和沙子相关的，所以在课堂上还推荐了博尔赫斯的短篇集《沙之书》。
 
-<img alt="曼哈顿街头临时开放的公共空间里，人们围着装置玩耍和休息。" class="note-image" loading="lazy" src="/images/all-things-grow-2276.webp" />
+<img alt="曼哈顿街头临时开放的公共空间里，人们围着装置玩耍和休息。" class="note-image" loading="lazy" src="https://image.tadorna-ferruginea.com/all-things-grow-2276.webp" />
 
 在这周的空闲时间，也终于是加班加点把约球系统 vibe 出来了，也算是对浏览器打开一个网页时的行为有了基本的理解，能够具体地思考、设计和部署一个包含静态前端、Worker 后端和数据库的系统了。所以很自然地，我们的下一步就是按照同样的思路给我的博客加上图床了。如果我最近不太忙的话，这或许是最后一个图片和网页一起进 repo 的 Note 了。
 
@@ -23,8 +23,8 @@ thumbnail:
 
 另外，我的 Therapist 是从光和色彩中认识开尔文的。她并不知道开氏温标，但是知道照明中的色温是用开尔文标注的。
 
-<img alt="抬头望见的纽约楼群，旧建筑的装饰与现代玻璃高楼并置。" class="note-image" loading="lazy" src="/images/all-things-grow-2278.webp" />
+<img alt="抬头望见的纽约楼群，旧建筑的装饰与现代玻璃高楼并置。" class="note-image" loading="lazy" src="https://image.tadorna-ferruginea.com/all-things-grow-2278.webp" />
 
 我总觉得纽约其实也是充满彩蛋的城市。过去的建筑师在十几层高处的外立面设计复杂的结构、花纹、颜色、钟表，以及用于驱鸟的假猫头鹰的时候，也在希望着有偶然抬头的路人能够欣赏到吧。
 
-<img alt="蓝天下的纽约街道，旧楼、行人与远处的现代高楼同框。" class="note-image" loading="lazy" src="/images/all-things-grow-2284.webp" />
+<img alt="蓝天下的纽约街道，旧楼、行人与远处的现代高楼同框。" class="note-image" loading="lazy" src="https://image.tadorna-ferruginea.com/all-things-grow-2284.webp" />

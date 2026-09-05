@@ -23,6 +23,15 @@ Manage the background server with `astro dev stop`, `astro dev status`, and `ast
 - Test the scheduler as one system, never as an isolated page mock: run Astro, the local Worker, and local D1 together; use the browser against Astro and verify that login, weather, availability, activities, RSVPs, comments, cross-language navigation, and failure responses travel through the Worker API. Do not add browser-storage fixtures or pretend client state is persistent service data.
 - Do not leave a scheduler control interactive until its corresponding Worker read/write path is connected and tested. A partially wired feature must be visibly unavailable, never silently mutate an in-memory sample and appear saved.
 
+## R2 image hosting
+
+- Store published content images in the `tadorna-ferruginea-images` R2 bucket. Git is the source of truth for Markdown, frontmatter, and image URLs—not for the image objects themselves.
+- Use an R2 custom domain for public image reads; do not use the rate-limited `r2.dev` development URL in published content. A Worker is unnecessary for public reads and should be introduced only for authenticated upload, transformations, or private assets.
+- Keep the pickup-scheduler Worker separate from image upload. Any future image-upload Worker must have its own narrowly scoped authenticated routes; do not add an R2 binding or image routes to the private scheduler service unless Nicole explicitly asks.
+- Published image URLs must point to the configured R2 custom domain, use stable human-readable object keys, and retain meaningful `alt` text in the paired content files. Do not invent the image-host domain before it is configured.
+- Do not add new published content photographs or image derivatives to `public/` or commit them to Git. Existing interface assets may remain in `public/`; migrate existing content images only after the image host is working and their R2 URLs have been verified.
+- Keep original uploads private and outside Git. Before uploading any public derivative to R2, create a separate web-safe copy, remove EXIF, XMP, and IPTC metadata, and inspect it for visible sensitive details under the public-image privacy rules below.
+
 ## Documentation
 
 ## Publishing metadata
@@ -208,7 +217,7 @@ content inside a Post or Backyard content page, not a reason to redesign the sur
 
 ## Public image privacy
 
-- Before adding any user-supplied image to `public/` or published content, create a separate
+- Before uploading any user-supplied image to R2 or adding it to published content, create a separate
   web-safe copy and automatically remove embedded EXIF, XMP, and IPTC metadata, including GPS
   coordinates, capture time, device details, and author/contact fields. Never modify or delete the
   user's original upload.
@@ -216,5 +225,5 @@ content inside a Post or Backyard content page, not a reason to redesign the sur
   telephone numbers, home or work addresses, IDs, QR/barcodes, and readable private screen or
   document content. Report any detected sensitive details before publishing. Do not redact, blur,
   crop, retouch, or otherwise alter the image's visible content without Nicole's explicit consent.
-- Preserve only the web-safe copy in the repository. Do not commit original image files containing
-  personal metadata or unredacted sensitive information.
+- Preserve only the web-safe public copy in R2. Do not commit original image files or published
+  content-image derivatives to the repository.
