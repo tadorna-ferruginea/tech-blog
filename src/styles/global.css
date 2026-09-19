@@ -146,6 +146,10 @@
 		color: var(--color-muted);
 	}
 
+	.prose .postscript {
+		font-size: 0.875em;
+	}
+
 	.note-content img {
 		width: min(100%, 24rem);
 		height: auto;
